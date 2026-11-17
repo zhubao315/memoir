@@ -126,7 +126,9 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         "access_token": tokens["access_token"],
         "refresh_token": tokens["refresh_token"],
         "token_type": "bearer",
-        "user": tokens["user"],
+        # Explicit serialization: without a response_model, FastAPI's encoder
+        # would emit {} for a SQLAlchemy model instance.
+        "user": UserResponse.model_validate(tokens["user"]).model_dump(mode="json"),
     }
 
 
