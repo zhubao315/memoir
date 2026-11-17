@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { del, get, post, put } from '../../services/api'
 import { Card, Empty, Field, Loading } from '../../components/ui'
 import { useToast } from '../../components/Toast'
+import { useLightbox } from '../../components/Lightbox'
 
 function MemoryMedia({ memoryId }: { memoryId: string }) {
   const [items, setItems] = useState<any[]>([])
+  const lightbox = useLightbox()
   useEffect(() => {
     get(`/v1/memories/${memoryId}/media`).then((r: any) => setItems(r)).catch(() => setItems([]))
   }, [memoryId])
@@ -12,15 +14,14 @@ function MemoryMedia({ memoryId }: { memoryId: string }) {
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
       {items.filter((x) => x.media_type === 'photo').map((x) => (
-        <a key={x.id} href={x.url} target="_blank" rel="noreferrer" title="查看大图">
-          <img src={x.url} alt={x.caption || '记忆配图'}
-               style={{ width: 92, height: 92, objectFit: 'cover', borderRadius: 8, border: '1px solid #e4eaf3' }} />
-        </a>
+        <button key={x.id} className="thumb" onClick={() => lightbox.open(x.url, x.caption || '记忆配图')} title="点击预览大图">
+          <img src={x.url} alt={x.caption || '记忆配图'} />
+        </button>
       ))}
       {items.filter((x) => x.media_type !== 'photo').map((x) => (
-        <a key={x.id} href={x.url} target="_blank" rel="noreferrer" className="chip" title="打开媒体">
+        <button key={x.id} className="chip" onClick={() => lightbox.open(x.url, x.caption || x.media_type)} title="点击预览">
           {x.media_type === 'audio' ? '◉ 音频' : x.media_type === 'video' ? '▣ 视频' : '▤ 文档'}
-        </a>
+        </button>
       ))}
     </div>
   )

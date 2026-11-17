@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ToastProvider } from './components/Toast'
+import { LightboxProvider } from './components/Lightbox'
 import { Auth } from './features/auth/Auth'
 import { Dashboard } from './features/dashboard/Dashboard'
 import { MemoryVault } from './features/memory/MemoryVault'
@@ -19,6 +20,7 @@ function Protected({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <ToastProvider>
+      <LightboxProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Auth />} />
@@ -33,6 +35,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </LightboxProvider>
     </ToastProvider>
   )
 }

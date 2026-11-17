@@ -115,48 +115,207 @@ def _render_markdown(db: Session, book: Book) -> str:
 
 
 def _render_pdf(db: Session, book: Book, path: Path) -> None:
+    """Editorial-style PDF: full-bleed cover, title page, TOC, illustrated chapters, back cover."""
+    from io import BytesIO
+
+    from PIL import Image
+    from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen import canvas
+    from reportlab.lib.utils import ImageReader
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+    from reportlab.pdfgen import canvas
+
+    from app.models.media import MediaAsset
+    from app.storage import get_storage
 
     pdfmetrics.registerFont(UnicodeCIDFont("STSong-Light"))
+    FONT = "STSong-Light"
+    NAVY = colors.HexColor("#0B1730")
+    GOLD = colors.HexColor("#E7B75A")
+    GRAY = colors.HexColor("#5B6B85")
+
     c = canvas.Canvas(str(path), pagesize=A4)
-    width, height = A4
-    y = height - 60
+    W, H = A4
+    M = 54
 
-    def write_line(text: str, size: int = 11):
-        nonlocal y
-        if y < 60:
-            c.showPage()
-            y = height - 60
-        c.setFont("STSong-Light", size)
-        # crude wrap by character count
-        for i in range(0, len(text), 42):
-            if y < 60:
-                c.showPage()
-                y = height - 60
-            c.drawString(50, y, text[i : i + 42])
-            y -= size + 6
+    def read_image(asset_id: str | None, max_px: int = 1500):
+        if not asset_id:
+            return None
+        asset = db.query(MediaAsset).filter(MediaAsset.id == asset_id).first()
+        if not asset:
+            return None
+        try:
+            raw = get_storage().read(asset.storage_key)
+        except Exception:
+            return None
+        try:
+            img = Image.open(BytesIO(raw))
+            img.thumbnail((max_px, max_px))
+            return ImageReader(img)
+        except Exception:
+            return ImageReader(BytesIO(raw))
 
-    write_line(book.title, 22)
-    write_line(book.subtitle or "", 13)
-    write_line(f"作者：{book.author or ''}", 11)
-    for ch in db.query(BookChapter).filter(BookChapter.book_id == book.id).order_by(BookChapter.order_index).all():
-        y -= 16
-        write_line(ch.title, 16)
+    def draw_full_bleed(asset_id: str | None) -> bool:
+        img = read_image(asset_id)
+        if img is None:
+            return False
+        iw, ih = img.getSize()
+        scale = max(W / iw, H / ih)
+        dw, dh = iw * scale, ih * scale
+        c.saveState()
+        clip = c.beginPath()
+        clip.rect(0, 0, W, H)
+        c.clipPath(clip)
+        c.drawImage(img, (W - dw) / 2, (H - dh) / 2, width=dw, height=dh)
+        c.restoreState()
+        return True
+
+    state = {"y": H - M, "page": 1}
+
+    def new_page() -> None:
+        c.showPage()
+        state["y"] = H - M
+        state["page"] += 1
+        c.setFont(FONT, 8)
+        c.setFillColor(GRAY)
+        c.drawRightString(W - M, 26, str(state["page"]))
+        c.setFillColor(colors.black)
+
+    def wrap(text: str, size: float, max_width: float) -> list[str]:
+        c.setFont(FONT, size)
+        lines: list[str] = []
+        cur = ""
+        for ch in (text or "").replace("\r", ""):
+            if ch == "\n":
+                lines.append(cur)
+                cur = ""
+                continue
+            if pdfmetrics.stringWidth(cur + ch, FONT, size) <= max_width:
+                cur += ch
+            else:
+                lines.append(cur)
+                cur = ch
+        if cur:
+            lines.append(cur)
+        return lines
+
+    def para(text: str, size: float = 10.5, color=None, gap: int = 6) -> None:
+        for line in wrap(text, size, W - 2 * M):
+            if state["y"] < M + 18:
+                new_page()
+            c.setFont(FONT, size)
+            c.setFillColor(color or colors.black)
+            c.drawString(M, state["y"], line)
+            state["y"] -= size + 6
+        state["y"] -= gap
+        c.setFillColor(colors.black)
+
+    def draw_chapter_images(ids, max_height: float = 250) -> None:
+        for aid in (ids or [])[:2]:
+            img = read_image(aid, max_px=1200)
+            if img is None:
+                continue
+            iw, ih = img.getSize()
+            draw_w = W - 2 * M
+            draw_h = draw_w * ih / iw
+            if draw_h > max_height:
+                draw_h = max_height
+                draw_w = draw_h * iw / ih
+            if state["y"] - draw_h < M + 18:
+                new_page()
+            c.drawImage(img, M + (W - 2 * M - draw_w) / 2, state["y"] - draw_h, width=draw_w, height=draw_h)
+            state["y"] -= draw_h + 10
+
+    chapters = db.query(BookChapter).filter(BookChapter.book_id == book.id).order_by(BookChapter.order_index).all()
+
+    # 1) Front cover (full bleed) — generated AI cover image
+    if not draw_full_bleed(book.cover_media_id):
+        c.setFillColor(NAVY)
+        c.rect(0, 0, W, H, fill=1, stroke=0)
+        c.setFillColor(GOLD)
+        c.setFont(FONT, 30)
+        c.drawCentredString(W / 2, H * 0.58, book.title)
+        c.setFont(FONT, 13)
+        c.drawCentredString(W / 2, H * 0.52, book.subtitle or "")
+    c.showPage()
+
+    # 2) Title page
+    c.setFillColor(NAVY)
+    c.rect(0, H - 150, W, 150, fill=1, stroke=0)
+    c.setFillColor(GOLD)
+    c.setFont(FONT, 10)
+    c.drawCentredString(W / 2, H - 60, "MEMOIR · 人生回忆录")
+    c.setFillColor(NAVY)
+    c.setFont(FONT, 28)
+    c.drawCentredString(W / 2, H - 245, book.title)
+    c.setFillColor(GRAY)
+    c.setFont(FONT, 13)
+    c.drawCentredString(W / 2, H - 285, book.subtitle or "")
+    c.setFont(FONT, 11)
+    c.drawCentredString(W / 2, H - 320, f"作者：{book.author or '林一'}")
+    c.setStrokeColor(GOLD)
+    c.setLineWidth(1.2)
+    c.line(W / 2 - 60, H - 350, W / 2 + 60, H - 350)
+    c.showPage()
+
+    # 3) Table of contents
+    state["y"] = H - M
+    c.setFillColor(NAVY)
+    c.setFont(FONT, 20)
+    c.drawString(M, state["y"], "目录")
+    state["y"] -= 40
+    for i, ch in enumerate(chapters, 1):
+        c.setFont(FONT, 12)
+        c.setFillColor(NAVY)
+        c.drawString(M, state["y"], f"{i:02d}  {ch.title}")
+        c.setFillColor(GRAY)
+        c.drawRightString(W - M, state["y"], "第 " + str(i + 2) + " 章")
+        state["y"] -= 24
+    c.setFillColor(colors.black)
+    c.showPage()
+
+    # 4) Chapters
+    state["y"] = H - M
+    c.setFont(FONT, 8)
+    c.setFillColor(GRAY)
+    c.drawRightString(W - M, 26, str(state["page"]))
+    c.setFillColor(colors.black)
+    for idx, ch in enumerate(chapters):
+        if idx > 0:
+            new_page()
+        c.setFillColor(NAVY)
+        c.setFont(FONT, 19)
+        c.drawString(M, state["y"], ch.title)
+        state["y"] -= 22
+        c.setStrokeColor(GOLD)
+        c.setLineWidth(1.2)
+        c.line(M, state["y"], W - M, state["y"])
+        state["y"] -= 26
         if ch.intro:
-            write_line(ch.intro)
+            para(ch.intro, 11, GRAY)
         if ch.content:
-            write_line(ch.content)
+            para(ch.content, 10.5)
+        draw_chapter_images(ch.media_ids)
         for sid in ch.story_ids or []:
             story = db.query(Story).filter(Story.id == sid).first()
-            if story and story.current_version_id:
-                v = db.query(StoryVersion).filter(StoryVersion.id == story.current_version_id).first()
-                if v:
-                    y -= 10
-                    write_line(story.title or "无标题", 13)
-                    write_line(v.content)
+            if not story or not story.current_version_id:
+                continue
+            version = db.query(StoryVersion).filter(StoryVersion.id == story.current_version_id).first()
+            if not version:
+                continue
+            para(story.title or "无标题", 14, NAVY)
+            para(version.content, 10.5)
+
+    # 5) Back cover (full bleed) — generated AI back cover
+    c.showPage()
+    back_id = (book.settings or {}).get("back_cover_media_id")
+    if not draw_full_bleed(back_id):
+        c.setFillColor(NAVY)
+        c.rect(0, 0, W, H, fill=1, stroke=0)
+        c.setFillColor(GOLD)
+        c.setFont(FONT, 12)
+        c.drawCentredString(W / 2, H / 2, "Your Life. Your Stories. Your Legacy.")
     c.save()
 
 

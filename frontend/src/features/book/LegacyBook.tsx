@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { get, post } from '../../services/api'
 import { Card, Empty, Field } from '../../components/ui'
 import { useToast } from '../../components/Toast'
+import { useLightbox } from '../../components/Lightbox'
 
 export function LegacyBook() {
   const [books, setBooks] = useState<any[]>([])
@@ -10,6 +11,7 @@ export function LegacyBook() {
   const [active, setActive] = useState<string | null>(null)
   const [detail, setDetail] = useState<any>(null)
   const [covers, setCovers] = useState<{ cover?: string; back?: string }>({})
+  const lightbox = useLightbox()
   const [chapterTitle, setChapterTitle] = useState('')
   const [qr, setQr] = useState('')
   const toast = useToast()
@@ -73,12 +75,12 @@ export function LegacyBook() {
           <div>
             {(covers.cover || covers.back) && (
               <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-                {covers.cover && <a href={covers.cover} target="_blank" rel="noreferrer" title="封面">
-                  <img src={covers.cover} alt="封面" style={{ width: 110, height: 110, objectFit: 'cover', borderRadius: 8, border: '1px solid #e4eaf3' }} />
-                </a>}
-                {covers.back && <a href={covers.back} target="_blank" rel="noreferrer" title="封底">
-                  <img src={covers.back} alt="封底" style={{ width: 110, height: 110, objectFit: 'cover', borderRadius: 8, border: '1px solid #e4eaf3' }} />
-                </a>}
+                {covers.cover && <button className="thumb" style={{ width: 110, height: 110 }} onClick={() => lightbox.open(covers.cover!, '书籍封面')} title="点击预览封面">
+                  <img src={covers.cover} alt="封面" />
+                </button>}
+                {covers.back && <button className="thumb" style={{ width: 110, height: 110 }} onClick={() => lightbox.open(covers.back!, '书籍封底')} title="点击预览封底">
+                  <img src={covers.back} alt="封底" />
+                </button>}
               </div>
             )}
             <h4 style={{ marginBottom: 8 }}>章节 ({detail.chapters?.length || 0})</h4>

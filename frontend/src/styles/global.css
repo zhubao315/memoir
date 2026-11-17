@@ -88,6 +88,27 @@ button, input, textarea, select { font: inherit; }
 .toast.err { background: var(--danger); }
 @keyframes slide { from { transform: translateY(12px); opacity: 0; } }
 
+.thumb { border: 1px solid var(--line); background: #fff; padding: 0; border-radius: 8px; overflow: hidden; cursor: zoom-in; width: 92px; height: 92px; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
+.thumb:hover img { transform: scale(1.06); }
+
+/* Lightbox preview */
+.lightbox {
+  position: fixed; inset: 0; z-index: 3000; background: rgba(6, 12, 26, .9);
+  display: flex; align-items: center; justify-content: center; padding: 4vh 4vw;
+  animation: fade .18s ease;
+}
+@keyframes fade { from { opacity: 0; } }
+.lightbox-panel { position: relative; max-width: 94vw; max-height: 92vh; display: flex; flex-direction: column; align-items: center; }
+.lightbox-panel img { max-width: 94vw; max-height: 84vh; object-fit: contain; border-radius: 10px; box-shadow: 0 24px 80px rgba(0,0,0,.6); }
+.lightbox-close {
+  position: absolute; top: -38px; right: 0; width: 34px; height: 34px; border: none;
+  border-radius: 50%; background: rgba(255,255,255,.16); color: #fff; font-size: 22px;
+  line-height: 1; cursor: pointer;
+}
+.lightbox-close:hover { background: rgba(255,255,255,.3); }
+.lightbox-caption { color: #c7d3e8; font-size: 13px; margin-top: 12px; text-align: center; }
+
 /* Recording */
 .rec-btn { width: 90px; height: 90px; border-radius: 50%; border: none; background: var(--danger); color: #fff; font-size: 30px; cursor: pointer; box-shadow: 0 8px 24px rgba(224,82,96,.35); }
 .rec-btn.recording { animation: pulse 1.4s infinite; }
