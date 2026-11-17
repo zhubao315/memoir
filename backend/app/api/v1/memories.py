@@ -59,10 +59,14 @@ def list_memories(
     mood: str | None = None,
     tag: str | None = None,
     search: str | None = None,
+    show_trash: bool = False,
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    q = db.query(Memory).filter(Memory.user_id == user.id, Memory.deleted_at.is_(None))
+    q = db.query(Memory).filter(
+        Memory.user_id == user.id,
+        Memory.deleted_at.isnot(None) if show_trash else Memory.deleted_at.is_(None),
+    )
     if memory_type:
         q = q.filter(Memory.memory_type == memory_type)
     if mood:
@@ -121,6 +125,30 @@ def update_memory(memory_id: str, payload: MemoryUpdate, user=Depends(get_curren
     db.refresh(m)
     log_action("memory.update", user_id=user.id, resource_type="memory", resource_id=m.id)
     return m
+
+
+@router.post("/{memory_id}/restore", response_model=MemoryOut)
+def restore_memory(memory_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    m = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id, Memory.deleted_at.isnot(None)).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="回收站中没有该记忆")
+    m.deleted_at = None
+    db.commit()
+    db.refresh(m)
+    log_action("memory.restore", user_id=user.id, resource_type="memory", resource_id=m.id)
+    return m
+
+
+@router.delete("/{memory_id}/purge")
+def purge_memory(memory_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    m = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id, Memory.deleted_at.isnot(None)).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="回收站中没有该记忆")
+    db.query(MediaAsset).filter(MediaAsset.memory_id == m.id).delete()
+    db.delete(m)
+    db.commit()
+    log_action("memory.purge", user_id=user.id, resource_type="memory", resource_id=m.id)
+    return {"message": "已彻底删除"}
 
 
 @router.delete("/{memory_id}")
