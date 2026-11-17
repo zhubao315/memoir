@@ -93,11 +93,18 @@ def _transcription(db: Session, job: AIJob) -> None:
         raise ValueError("media asset or recording not found")
     from app.storage import get_storage
 
-    data = get_storage().read(asset.storage_key)
-    from app.ai.factory import get_asr
+    try:
+        data = get_storage().read(asset.storage_key)
+        from app.ai.factory import get_asr
 
-    engine = get_asr().name
-    text, raw = transcribe(data, asset.original_filename or "audio", asset.mime_type or "audio/mpeg")
+        engine = get_asr().name
+        text, raw = transcribe(data, asset.original_filename or "audio", asset.mime_type or "audio/mpeg")
+    except Exception as exc:
+        # 转写失败也要落到录音记录上，前端才能明确展示「失败」状态与原因。
+        recording.status = "failed"
+        recording.error = str(exc)[:2000]
+        db.commit()
+        raise
     db.add(
         Transcript(
             recording_id=recording.id,

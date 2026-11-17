@@ -4,6 +4,7 @@ import { get, post, setToken, setUser } from '../../services/api'
 import { Card, Field } from '../../components/ui'
 import { useToast } from '../../components/Toast'
 import { ActivityLog } from './Activity'
+import { ChunkUploader } from '../../components/ChunkUploader'
 
 export function Settings() {
   const [oldPw, setOldPw] = useState('')
@@ -74,6 +75,11 @@ export function SettingsWithActivity() {
   return (
     <div>
       <Settings />
+      <div style={{ marginTop: 18 }}>
+        <Card title="大文件上传（分片 / 可恢复）">
+          <ChunkUploader onUploaded={() => toast.show('文件已存入你的个人媒体库')} />
+        </Card>
+      </div>
       <div style={{ marginTop: 18 }}><ActivityLog /></div>
     </div>
   )
