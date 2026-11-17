@@ -3,6 +3,29 @@ import { del, get, post, put } from '../../services/api'
 import { Card, Empty, Field, Loading } from '../../components/ui'
 import { useToast } from '../../components/Toast'
 
+function MemoryMedia({ memoryId }: { memoryId: string }) {
+  const [items, setItems] = useState<any[]>([])
+  useEffect(() => {
+    get(`/v1/memories/${memoryId}/media`).then((r: any) => setItems(r)).catch(() => setItems([]))
+  }, [memoryId])
+  if (!items.length) return null
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+      {items.filter((x) => x.media_type === 'photo').map((x) => (
+        <a key={x.id} href={x.url} target="_blank" rel="noreferrer" title="查看大图">
+          <img src={x.url} alt={x.caption || '记忆配图'}
+               style={{ width: 92, height: 92, objectFit: 'cover', borderRadius: 8, border: '1px solid #e4eaf3' }} />
+        </a>
+      ))}
+      {items.filter((x) => x.media_type !== 'photo').map((x) => (
+        <a key={x.id} href={x.url} target="_blank" rel="noreferrer" className="chip" title="打开媒体">
+          {x.media_type === 'audio' ? '◉ 音频' : x.media_type === 'video' ? '▣ 视频' : '▤ 文档'}
+        </a>
+      ))}
+    </div>
+  )
+}
+
 export function MemoryVault() {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -60,6 +83,7 @@ export function MemoryVault() {
                 <b>{m.title || '无标题记忆'}</b>
                 <p style={{ color: '#5b6b85', fontSize: 14, margin: '4px 0' }}>{(m.raw_content || '').slice(0, 140)}</p>
                 {(m.tags || []).map((t: string) => <span className="chip" key={t}>{t}</span>)}
+                <MemoryMedia memoryId={m.id} />
                 <div style={{ marginTop: 6 }}>
                   <button className="btn sm ghost" onClick={() => edit(m)}>编辑</button>{' '}
                   <button className="btn sm ghost" onClick={() => remove(m.id)}>删除</button>

@@ -9,6 +9,7 @@ export function LegacyBook() {
   const [author, setAuthor] = useState('')
   const [active, setActive] = useState<string | null>(null)
   const [detail, setDetail] = useState<any>(null)
+  const [covers, setCovers] = useState<{ cover?: string; back?: string }>({})
   const [chapterTitle, setChapterTitle] = useState('')
   const [qr, setQr] = useState('')
   const toast = useToast()
@@ -17,6 +18,16 @@ export function LegacyBook() {
   const loadDetail = (id: string) => get(`/v1/book/${id}`).then(setDetail)
   useEffect(() => { load() }, [])
   useEffect(() => { if (active) loadDetail(active) }, [active])
+  useEffect(() => {
+    const book = detail?.book
+    if (!book) { setCovers({}); return }
+    const front = book.cover_media_id
+    const back = book.settings?.back_cover_media_id
+    Promise.all([
+      front ? get(`/v1/media/${front}/url`) : Promise.resolve(null),
+      back ? get(`/v1/media/${back}/url`) : Promise.resolve(null),
+    ]).then(([f, b]: any) => setCovers({ cover: f?.url, back: b?.url })).catch(() => setCovers({}))
+  }, [detail])
 
   const create = async () => {
     if (!title.trim()) return
@@ -60,6 +71,16 @@ export function LegacyBook() {
       <Card title="章节与导出">
         {!detail ? <Empty text="选择一本回忆录进行编辑" /> : (
           <div>
+            {(covers.cover || covers.back) && (
+              <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                {covers.cover && <a href={covers.cover} target="_blank" rel="noreferrer" title="封面">
+                  <img src={covers.cover} alt="封面" style={{ width: 110, height: 110, objectFit: 'cover', borderRadius: 8, border: '1px solid #e4eaf3' }} />
+                </a>}
+                {covers.back && <a href={covers.back} target="_blank" rel="noreferrer" title="封底">
+                  <img src={covers.back} alt="封底" style={{ width: 110, height: 110, objectFit: 'cover', borderRadius: 8, border: '1px solid #e4eaf3' }} />
+                </a>}
+              </div>
+            )}
             <h4 style={{ marginBottom: 8 }}>章节 ({detail.chapters?.length || 0})</h4>
             {detail.chapters?.map((c: any) => <div className="timeline-item" key={c.id}><b>{c.title}</b></div>)}
             <Field label="新增章节标题"><input className="input" value={chapterTitle} onChange={e => setChapterTitle(e.target.value)} /></Field>

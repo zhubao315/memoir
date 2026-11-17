@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -66,8 +66,8 @@ def serve_signed_file(token: str):
 @router.post("/upload", response_model=MediaOut, status_code=201)
 async def upload(
     file: UploadFile = File(...),
-    memory_id: str | None = None,
-    family_id: str | None = None,
+    memory_id: str | None = Form(None),
+    family_id: str | None = Form(None),
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

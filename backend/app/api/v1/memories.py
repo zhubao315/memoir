@@ -5,15 +5,50 @@ from __future__ import annotations
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.audit import log_action
 from app.core.deps import get_current_user, get_db
 from app.models.memory import Memory
+from app.models.media import MediaAsset
 from app.schemas.memory import MemoryIn, MemoryOut, MemoryUpdate
+from app.services.media import signed_url_for
 from app.services.tasks import create_job, enqueue
 
 router = APIRouter(prefix="/memories", tags=["memory-vault"])
+
+
+class MemoryMediaOut(BaseModel):
+    id: str
+    media_type: str
+    caption: str | None = None
+    url: str
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/{memory_id}/media", response_model=List[MemoryMediaOut])
+def memory_media(memory_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Media attached to a memory, with short-lived signed URLs (原则: 私有存储)."""
+    memory = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id, Memory.deleted_at.is_(None)).first()
+    if not memory:
+        raise HTTPException(status_code=404, detail="记忆不存在")
+    assets = db.query(MediaAsset).filter(
+        MediaAsset.memory_id == memory_id,
+        MediaAsset.user_id == user.id,
+        MediaAsset.deleted_at.is_(None),
+    ).order_by(MediaAsset.created_at.asc()).all()
+    return [
+        MemoryMediaOut(
+            id=a.id,
+            media_type=a.media_type,
+            caption=a.caption,
+            url=signed_url_for(a),
+        )
+        for a in assets
+    ]
 
 
 @router.get("", response_model=List[MemoryOut])
