@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { get, post } from '../../services/api'
+import { del, get, post, put } from '../../services/api'
 import { Card, Empty, Field, Loading } from '../../components/ui'
 import { useToast } from '../../components/Toast'
 
@@ -183,11 +183,107 @@ export function StoryStudio() {
 
 function StoriesList() {
   const [stories, setStories] = useState<any[] | null>(null)
-  useEffect(() => { get('/v1/story/stories').then((r: any) => setStories(r)).catch(() => setStories([])) }, [])
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [versions, setVersions] = useState<Record<string, any[]>>({})
+  const [regenMode, setRegenMode] = useState<Record<string, string>>({})
+  const [compare, setCompare] = useState<Record<string, [string | null, string | null]>>({})
+  const toast = useToast()
+
+  const load = () => get('/v1/story/stories').then((r: any) => setStories(r)).catch(() => setStories([]))
+  useEffect(() => { load() }, [])
+
+  const loadVersions = async (id: string) => {
+    if (versions[id]) return
+    const v: any = await get(`/v1/story/stories/${id}/versions`)
+    setVersions((prev) => ({ ...prev, [id]: v }))
+  }
+  const toggle = (id: string) => {
+    if (expanded === id) { setExpanded(null); return }
+    setExpanded(id); loadVersions(id)
+  }
+  const regenerateStory = async (id: string) => {
+    try {
+      await post(`/v1/story/stories/${id}/regenerate`, { mode: regenMode[id] || 'first_person' })
+      setVersions((prev) => ({ ...prev, [id]: [] }))
+      toast.show('已生成新风格版本')
+      load()
+    } catch (e: any) { toast.show(e.message, 'err') }
+  }
+  const changeVisibility = async (id: string, visibility: string) => {
+    try { await put(`/v1/story/stories/${id}/visibility`, { visibility }); toast.show('可见性已更新'); load() }
+    catch (e: any) { toast.show(e.message, 'err') }
+  }
+  const removeStory = async (id: string) => {
+    if (!confirm('删除故事？原始记忆与录音不会被删除。')) return
+    try { await del(`/v1/story/stories/${id}`); toast.show('故事已删除'); load() }
+    catch (e: any) { toast.show(e.message, 'err') }
+  }
+
   if (!stories) return <Loading />
-  return <Card title={`我的故事 (${stories.length})`}>
-    {stories.length === 0 ? <Empty icon="✎" text="还没有故事" /> : stories.map(s => (
-      <div className="timeline-item" key={s.id}><b>{s.title || '无标题'}</b> <span className="chip">{s.status}</span></div>
-    ))}
-  </Card>
+  return (
+    <Card title={`我的故事 (${stories.length})`}>
+      {stories.length === 0 ? <Empty icon="✎" text="还没有故事" /> : stories.map((s) => {
+        const vs = versions[s.id] || []
+        const sel = compare[s.id] || [null, null]
+        const pick = (idx: number, val: string) => {
+          const next: [string | null, string | null] = [...sel] as any
+          next[idx] = val
+          setCompare((p) => ({ ...p, [s.id]: next }))
+        }
+        return (
+          <div className="story-manage" key={s.id}>
+            <div className="story-manage-head">
+              <div><b>{s.title || '无标题'}</b> <span className="chip">{s.status}</span> <span className="chip">{s.visibility === 'private' ? '仅自己' : s.visibility === 'family' ? '家庭可见' : '公开'}</span></div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button className="btn sm ghost" onClick={() => toggle(s.id)}>版本 ({vs.length || '…'})</button>
+                <button className="btn sm ghost" onClick={() => removeStory(s.id)}>删除</button>
+              </div>
+            </div>
+            {expanded === s.id && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                  <select className="select" style={{ width: 140 }} value={regenMode[s.id] || 'first_person'} onChange={(e) => setRegenMode((p) => ({ ...p, [s.id]: e.target.value }))}>
+                    {MODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                  <button className="btn sm purple" onClick={() => regenerateStory(s.id)}>重新生成该风格</button>
+                  <select className="select" style={{ width: 110 }} value={s.visibility} onChange={(e) => changeVisibility(s.id, e.target.value)}>
+                    <option value="private">仅自己</option><option value="family">家庭可见</option><option value="public">公开</option>
+                  </select>
+                </div>
+                {vs.length === 0 ? <Loading text="加载版本…" /> : (
+                  <>
+                    <div style={{ fontSize: 12, color: '#5b6b85', marginBottom: 8 }}>
+                      版本对比：
+                      <select className="select" style={{ width: 150, display: 'inline-block', margin: '0 6px' }} value={sel[0] || ''} onChange={(e) => pick(0, e.target.value)}>
+                        <option value="">版本 A</option>{vs.map((v) => <option key={v.id} value={v.id}>v{v.version_no} · {v.mode}</option>)}
+                      </select>
+                      <select className="select" style={{ width: 150, display: 'inline-block' }} value={sel[1] || ''} onChange={(e) => pick(1, e.target.value)}>
+                        <option value="">版本 B</option>{vs.map((v) => <option key={v.id} value={v.id}>v{v.version_no} · {v.mode}</option>)}
+                      </select>
+                    </div>
+                    {sel[0] || sel[1] ? (
+                      <div className="version-compare">
+                        {[0, 1].map((i) => {
+                          const v = vs.find((x) => x.id === sel[i])
+                          return <div key={i} className="version-pane"><b>{i === 0 ? '版本 A' : '版本 B'}</b><div className="version-text">{v ? v.content : '请选择版本'}</div></div>
+                        })}
+                      </div>
+                    ) : (
+                      <div className="version-list">
+                        {vs.map((v) => <div key={v.id} className="version-item">
+                          <span className="chip">v{v.version_no} · {v.mode}</span>
+                          <span style={{ fontSize: 12, color: '#5b6b85' }}>{v.is_ai ? `${v.provider} / ${v.model}` : '人工编辑'} · {new Date(v.created_at).toLocaleString()}</span>
+                          <div className="version-text">{v.content.slice(0, 200)}</div>
+                        </div>)}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </Card>
+  )
 }

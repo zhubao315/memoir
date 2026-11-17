@@ -35,8 +35,20 @@ from app.schemas.story import (
 )
 from app.services import story as story_service
 from app.services.tasks import create_job, enqueue
+from app.models.ai import AIGenerationLog
+from app.ai.prompts.registry import PROMPT_VERSION
+from app.core.security import utcnow
 
 router = APIRouter(prefix="/story", tags=["story-studio"])
+
+
+class VisibilityIn(BaseModel):
+    visibility: str  # private | family | public
+
+
+class RegenerateIn(BaseModel):
+    mode: str = "first_person"
+    note: str | None = None
 
 
 # ---------------- Prompt bank ----------------
@@ -294,3 +306,67 @@ def current_version(story_id: str, user=Depends(get_current_user), db: Session =
     story = story_service.get_story(db, story_id, user.id)
     version = db.query(StoryVersion).filter(StoryVersion.id == story.current_version_id).first()
     return version
+
+
+@router.post("/stories/{story_id}/regenerate", response_model=StoryVersionOut, status_code=201)
+def regenerate(story_id: str, payload: RegenerateIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Create a NEW AI version from the original source using another narrative style."""
+    story = story_service.get_story(db, story_id, user.id)
+    raw = story_service.source_text(db, story.source_recording_id, story.source_memory_id, story.source_interview_id)
+    if not raw.strip():
+        # Fallback: rewrite the current version (never overwrites it).
+        current = db.query(StoryVersion).filter(StoryVersion.id == story.current_version_id).first()
+        raw = current.content if current else ""
+    if not raw.strip():
+        raise HTTPException(status_code=400, detail="没有可用的原始内容")
+    from app.ai.story_writer import generate_story
+
+    draft = generate_story(raw, payload.mode, title=story.title)
+    version = StoryVersion(
+        story_id=story.id,
+        version_no=story_service._next_version_no(db, story.id),
+        mode=payload.mode,
+        content=draft.content,
+        is_ai=True,
+        provider=draft.provider,
+        model=draft.model,
+        prompt_version=draft.prompt_version,
+        needs_confirmation=draft.needs_confirmation,
+        note=payload.note or f"重新生成 · {payload.mode}",
+        input_refs={"source_story_id": story.id},
+    )
+    db.add(version)
+    db.flush()
+    db.add(
+        AIGenerationLog(
+            user_id=user.id, job_id=None, task="story_regenerate", provider=draft.provider,
+            model=draft.model, prompt_version=draft.prompt_version,
+            input_refs={"story_id": story.id, "mode": payload.mode}, output=draft.content,
+        )
+    )
+    story.current_version_id = version.id
+    db.commit()
+    db.refresh(version)
+    return version
+
+
+@router.put("/stories/{story_id}/visibility", response_model=StoryOut)
+def set_visibility(story_id: str, payload: VisibilityIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if payload.visibility not in ("private", "family", "public"):
+        raise HTTPException(status_code=400, detail="可见性必须为 private / family / public")
+    story = story_service.get_story(db, story_id, user.id)
+    story.visibility = payload.visibility
+    if payload.visibility in ("family", "public") and story.status == "draft":
+        story.status = "in_review"
+    db.commit()
+    db.refresh(story)
+    return story
+
+
+@router.delete("/stories/{story_id}")
+def delete_story(story_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    story = story_service.get_story(db, story_id, user.id)
+    story.deleted_at = utcnow()
+    db.commit()
+    return {"message": "故事已移入草稿箱"}
+
