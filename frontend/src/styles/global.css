@@ -107,7 +107,10 @@ button, input, textarea, select { font: inherit; }
   line-height: 1; cursor: pointer;
 }
 .lightbox-close:hover { background: rgba(255,255,255,.3); }
-.lightbox-caption { color: #c7d3e8; font-size: 13px; margin-top: 12px; text-align: center; }
+.lightbox-caption { color: #c7d3e8; font-size: 13px; margin-top: 12px; text-align: center; max-width: 80vw; }
+.lightbox-player { background: #14284a; border: 1px solid rgba(255,255,255,.14); border-radius: 14px; padding: 28px 34px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.lightbox-player-icon { font-size: 42px; color: #9275E8; }
+.lightbox-player audio { width: min(520px, 78vw); }
 
 /* Recording */
 .rec-btn { width: 90px; height: 90px; border-radius: 50%; border: none; background: var(--danger); color: #fff; font-size: 30px; cursor: pointer; box-shadow: 0 8px 24px rgba(224,82,96,.35); }

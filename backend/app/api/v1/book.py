@@ -143,8 +143,8 @@ def _render_pdf(db: Session, book: Book, path: Path) -> None:
         if not asset_id:
             return None
         asset = db.query(MediaAsset).filter(MediaAsset.id == asset_id).first()
-        if not asset:
-            return None
+        if not asset or (asset.media_type and asset.media_type != "photo"):
+            return None  # 跳过音频/视频/文档，只渲染图片
         try:
             raw = get_storage().read(asset.storage_key)
         except Exception:

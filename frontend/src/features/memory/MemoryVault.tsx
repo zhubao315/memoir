@@ -19,8 +19,10 @@ function MemoryMedia({ memoryId }: { memoryId: string }) {
         </button>
       ))}
       {items.filter((x) => x.media_type !== 'photo').map((x) => (
-        <button key={x.id} className="chip" onClick={() => lightbox.open(x.url, x.caption || x.media_type)} title="点击预览">
-          {x.media_type === 'audio' ? '◉ 音频' : x.media_type === 'video' ? '▣ 视频' : '▤ 文档'}
+        <button key={x.id} className="chip" onClick={() => lightbox.open(x.url, x.caption || '录音', x.media_type === 'video' ? 'video' : 'audio')}
+                title={x.caption || '点击播放'}>
+          {x.media_type === 'audio' ? '◉ 口述录音' : x.media_type === 'video' ? '▣ 视频' : '▤ 文档'}
+          {x.caption ? ` · ${x.caption.slice(0, 12)}…` : ''}
         </button>
       ))}
     </div>
