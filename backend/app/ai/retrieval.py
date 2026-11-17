@@ -51,7 +51,10 @@ def retrieve(db: Session, user_id: str, query: str, top_k: int = 5, family_id: s
     scored = [item for item in scored if item[0] > 0.05]
     scored.sort(key=lambda x: x[0], reverse=True)
     out = []
-    for score, r in scored[:top_k]:
+    # Filter by lexical overlap BEFORE taking top_k: with the offline Mock's weak
+    # embeddings, a relevant memory can rank below unrelated ones. Filtering first
+    # prevents the guard from discarding every candidate in the truncated top_k.
+    for score, r in scored:
         text = _source_text(db, r)
         if not text:
             continue
@@ -73,7 +76,7 @@ def retrieve(db: Session, user_id: str, query: str, top_k: int = 5, family_id: s
                 "text": text[:2000],
             }
         )
-    return out
+    return out[:top_k]
 
 
 def answer(db: Session, user_id: str, question: str, evidence: list[dict]) -> dict:
