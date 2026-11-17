@@ -72,6 +72,7 @@ export function Settings() {
 }
 
 export function SettingsWithActivity() {
+  const toast = useToast()
   return (
     <div>
       <Settings />

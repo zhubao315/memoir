@@ -179,12 +179,14 @@ function MemoryMedia({ memoryId, onChange }: { memoryId: string; onChange?: () =
                   {x.caption ? ` · ${x.caption.slice(0, 12)}…` : ''}
                 </button>
               )}
-              <button
-                className="btn sm ghost"
-                onClick={() => remove(x)}
-                title="删除媒体"
-                style={{ position: 'absolute', top: -6, right: -6, padding: '0 5px', fontSize: 11 }}
-              >×</button>
+              {x.media_type !== 'audio' && (
+                <button
+                  className="btn sm ghost"
+                  onClick={() => remove(x)}
+                  title="删除媒体"
+                  style={{ position: 'absolute', top: -6, right: -6, padding: '0 5px', fontSize: 11 }}
+                >×</button>
+              )}
             </div>
           ))}
         </div>

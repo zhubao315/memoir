@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
 from app.core.audit import log_action
@@ -72,6 +73,12 @@ class MediaListItem(MediaOut):
     caption: str | None = None
     created_at: str | None = None  # 输出统一为 ISO 字符串
     memory_id: str | None = None  # 当前归属的记忆，供前端“移动到其它记忆”回显
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def _coerce_created_at(cls, value):
+        # ORM 读出来是 datetime，手动赋值是字符串，统一成字符串输出。
+        return str(value) if isinstance(value, datetime) else value
 
 
 class UrlOut(BaseModel):

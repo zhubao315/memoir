@@ -22,7 +22,6 @@ router = APIRouter(prefix="/legacy", tags=["digital-legacy"])
 
 # 明确的分享范围类型：只接受故事与记忆 ID，不接受 "all" / "*" 之类的通配。
 ALLOWED_SCOPE_TYPES = {"story", "memory"}
-POLICY_STATUSES = {"draft", "active", "disputed", "revoked", "released"}
 
 
 class ContactIn(BaseModel):
@@ -225,6 +224,29 @@ def policy_events(policy_id: str, user=Depends(get_current_user), db: Session = 
         .order_by(LegacyEvent.created_at.asc())
         .all()
     )
+
+
+@router.get("/events")
+def all_events(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """全部策略的事件时间线（仅本人），供前端统一展示。"""
+    rows = (
+        db.query(LegacyEvent)
+        .join(LegacyPolicy, LegacyEvent.policy_id == LegacyPolicy.id)
+        .filter(LegacyPolicy.user_id == user.id)
+        .order_by(LegacyEvent.created_at.desc())
+        .all()
+    )
+    return [
+        {
+            "id": e.id,
+            "policy_id": e.policy_id,
+            "event_type": e.event_type,
+            "actor_id": e.actor_id,
+            "detail": e.detail,
+            "created_at": e.created_at,
+        }
+        for e in rows
+    ]
 
 
 @router.post("/policies/{policy_id}/trigger-review")
