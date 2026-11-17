@@ -18,6 +18,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const nav = useNavigate()
   const path = window.location.pathname
   const [simple, setSimple] = useState(localStorage.getItem('memoir_simple') === 'true')
+  const [menuOpen, setMenuOpen] = useState(false)
   const user = currentUser()
 
   useEffect(() => {
@@ -39,7 +40,8 @@ export function Layout({ children }: { children: ReactNode }) {
   let lastGroup = ''
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      {menuOpen && <div className="nav-overlay" onClick={() => setMenuOpen(false)} />}
+      <aside className={`sidebar${menuOpen ? ' open' : ''}`}>
         <div className="brand"><span className="brand-mark">M</span><span>Memoir</span></div>
         <nav className="nav">
           {NAV.map((item) => {
@@ -47,7 +49,7 @@ export function Layout({ children }: { children: ReactNode }) {
             return (
               <div key={item.to}>
                 {head && <div className="nav-label">{head}</div>}
-                <button className={`nav-item ${path === item.to ? 'active' : ''}`} onClick={() => nav(item.to)}>
+                <button className={`nav-item ${path === item.to || (item.to !== '/' && path.startsWith(item.to)) ? 'active' : ''}`} onClick={() => { nav(item.to); setMenuOpen(false) }}>
                   <span className="ico">{item.ico}</span><span>{item.label}</span>
                 </button>
               </div>
@@ -58,8 +60,12 @@ export function Layout({ children }: { children: ReactNode }) {
       </aside>
       <div className="main">
         <header className="topbar">
-          <h1>{NAV.find((n) => n.to === path)?.label || 'Memoir'}</h1>
+          <div className="topbar-left">
+            <button className="menu-toggle" onClick={() => setMenuOpen(true)} aria-label="打开菜单">☰</button>
+            <h1>{NAV.find((n) => n.to === path)?.label || 'Memoir'}</h1>
+          </div>
           <div className="topbar-actions">
+            <button className="btn primary sm" onClick={() => nav('/memories')}>＋ 快速记录</button>
             <button className="btn ghost sm" onClick={() => setSimple(!simple)} title="切换老年简洁模式">
               {simple ? 'Aa 标准' : 'Aa 简洁模式'}
             </button>
