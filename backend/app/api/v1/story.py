@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.ai.extraction import extract_facts
@@ -34,10 +34,9 @@ from app.schemas.story import (
     VersionEditIn,
 )
 from app.services import story as story_service
+from app.services.media import signed_url_for
 from app.services.tasks import create_job, enqueue
 from app.models.ai import AIGenerationLog
-from app.ai.prompts.registry import PROMPT_VERSION
-from app.core.security import utcnow
 
 router = APIRouter(prefix="/story", tags=["story-studio"])
 
@@ -139,6 +138,19 @@ def answer(interview_id: str, payload: InterviewAnswerIn, user=Depends(get_curre
         raise HTTPException(status_code=404, detail="访谈不存在")
     if interview.status != "active":
         raise HTTPException(status_code=400, detail="访谈已结束或暂停")
+    # 回答中引用的录音必须属于当前用户，禁止挂载他人录音 id（IDOR 防护）。
+    if payload.recording_id:
+        rec = (
+            db.query(Recording)
+            .filter(
+                Recording.id == payload.recording_id,
+                Recording.user_id == user.id,
+                Recording.deleted_at.is_(None),
+            )
+            .first()
+        )
+        if not rec:
+            raise HTTPException(status_code=404, detail="录音不存在")
 
     facts = extract_facts(payload.content)
     history = [{"role": m.role, "content": m.content} for m in db.query(InterviewMessage).filter(InterviewMessage.interview_id == interview_id).all()]
@@ -188,6 +200,7 @@ class RecordingOut(BaseModel):
     status: str
     duration_seconds: float | None
     media_asset_id: str | None
+    error: str | None = None  # 转写失败原因，供前端明确展示「失败」状态
 
     class Config:
         from_attributes = True
@@ -195,9 +208,30 @@ class RecordingOut(BaseModel):
 
 @router.post("/recordings", response_model=RecordingOut, status_code=201)
 def create_recording(payload: RecordingIn, background: BackgroundTasks, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    asset = db.query(MediaAsset).filter(MediaAsset.id == payload.media_asset_id, MediaAsset.user_id == user.id).first()
+    asset = (
+        db.query(MediaAsset)
+        .filter(
+            MediaAsset.id == payload.media_asset_id,
+            MediaAsset.user_id == user.id,
+            MediaAsset.deleted_at.is_(None),
+        )
+        .first()
+    )
     if not asset:
         raise HTTPException(status_code=404, detail="媒体资产不存在")
+    # 关联的访谈同样必须归属当前用户，避免通过 recording 间接引用他人访谈。
+    if payload.interview_id:
+        interview = (
+            db.query(Interview)
+            .filter(
+                Interview.id == payload.interview_id,
+                Interview.user_id == user.id,
+                Interview.deleted_at.is_(None),
+            )
+            .first()
+        )
+        if not interview:
+            raise HTTPException(status_code=404, detail="访谈不存在")
     rec = Recording(
         user_id=user.id,
         family_id=asset.family_id,
@@ -220,15 +254,46 @@ def create_recording(payload: RecordingIn, background: BackgroundTasks, user=Dep
 
 @router.get("/recordings/{recording_id}")
 def get_recording(recording_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    rec = db.query(Recording).filter(Recording.id == recording_id, Recording.user_id == user.id).first()
+    rec = (
+        db.query(Recording)
+        .filter(Recording.id == recording_id, Recording.user_id == user.id, Recording.deleted_at.is_(None))
+        .first()
+    )
     if not rec:
         raise HTTPException(status_code=404, detail="录音不存在")
-    transcripts = db.query(Transcript).filter(Transcript.recording_id == rec.id).order_by(Transcript.created_at.desc()).all()
-    return {"recording": RecordingOut.model_validate(rec), "transcripts": [{"id": t.id, "content": t.content, "engine": t.engine} for t in transcripts]}
+    # 逐字稿也按 user_id 过滤；即使录制归属被篡改也不会读到他人文本。
+    transcripts = (
+        db.query(Transcript)
+        .filter(Transcript.recording_id == rec.id, Transcript.user_id == user.id)
+        .order_by(Transcript.created_at.desc())
+        .all()
+    )
+    asset = None
+    if rec.media_asset_id:
+        asset = (
+            db.query(MediaAsset)
+            .filter(MediaAsset.id == rec.media_asset_id, MediaAsset.user_id == user.id, MediaAsset.deleted_at.is_(None))
+            .first()
+        )
+    return {
+        "recording": RecordingOut.model_validate(rec),
+        "transcripts": [
+            {
+                "id": t.id,
+                "content": t.content,
+                "engine": t.engine,  # 真实 ASR 引擎名，前端如实展示
+                "is_corrected": bool(t.is_corrected),
+                "created_at": t.created_at.isoformat() if t.created_at else None,
+            }
+            for t in transcripts
+        ],
+        # 原始录音的短时效播放地址（仅资产所有者可见），供 Lightbox 播放。
+        "play_url": signed_url_for(asset) if asset else '',
+    }
 
 
 class TranscriptCorrectIn(BaseModel):
-    content: str
+    content: str = Field(min_length=1)
 
 
 @router.put("/transcripts/{transcript_id}")
@@ -236,16 +301,40 @@ def correct_transcript(transcript_id: str, payload: TranscriptCorrectIn, user=De
     t = db.query(Transcript).filter(Transcript.id == transcript_id, Transcript.user_id == user.id).first()
     if not t:
         raise HTTPException(status_code=404, detail="逐字稿不存在")
-    t.content = payload.content
-    t.is_corrected = True
+    # 双重归属校验：逐字稿关联的录音也必须属于当前用户。
+    rec = (
+        db.query(Recording)
+        .filter(Recording.id == t.recording_id, Recording.user_id == user.id, Recording.deleted_at.is_(None))
+        .first()
+    )
+    if not rec:
+        raise HTTPException(status_code=404, detail="录音不存在")
+    # 事实保护：原始 ASR 逐字稿不覆盖；人工修正另存为一条带 is_corrected 的新记录。
+    corrected = Transcript(
+        recording_id=t.recording_id,
+        user_id=user.id,
+        content=payload.content,
+        language=t.language,
+        engine=t.engine,
+        is_corrected=True,
+    )
+    db.add(corrected)
     db.commit()
-    return {"message": "逐字稿已修正（原始录音未改动）"}
+    db.refresh(corrected)
+    return {"message": "逐字稿已修正（原始录音与原始转写保持不变）", "id": corrected.id}
 
 
 # ---------------- Story generation ----------------
 @router.post("/stories/generate", response_model=StoryOut, status_code=201)
 def generate(payload: StoryGenerateIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    raw = story_service.source_text(db, payload.source_recording_id, payload.source_memory_id, payload.source_interview_id)
+    # 素材归属强制校验（IDOR 防护）：跨用户的 recording/memory/interview 会返回 404。
+    raw = story_service.source_text(
+        db,
+        user.id,
+        payload.source_recording_id,
+        payload.source_memory_id,
+        payload.source_interview_id,
+    )
     if not raw.strip():
         raise HTTPException(status_code=400, detail="没有可生成故事的原始内容")
     story, _ = story_service.create_story(
@@ -304,7 +393,13 @@ def restore_version(story_id: str, version_id: str, user=Depends(get_current_use
 @router.get("/stories/{story_id}/current")
 def current_version(story_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
     story = story_service.get_story(db, story_id, user.id)
-    version = db.query(StoryVersion).filter(StoryVersion.id == story.current_version_id).first()
+    version = (
+        db.query(StoryVersion)
+        .filter(StoryVersion.id == story.current_version_id, StoryVersion.story_id == story.id)
+        .first()
+    )
+    if not version:
+        raise HTTPException(status_code=404, detail="当前版本不存在")
     return version
 
 

@@ -11,13 +11,61 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.audit import log_action
 from app.core.config import settings
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_current_user, get_current_user_optional, get_db
 from app.core.security import utcnow
+from app.models.family import FamilyMember
 from app.models.publishing import Book, BookChapter, BookExportJob, BookQRCode
 from app.models.story import Story, StoryVersion
 
 router = APIRouter(prefix="/book", tags=["legacy-book"])
+
+# 公开故事页允许的可见性：family 需要登录且是家庭成员；public 才可匿名访问。
+PUBLIC_VISIBILITY = {"family", "public"}
+
+
+def _owned_book(db: Session, book_id: str, user_id: str) -> Book:
+    """所有书籍操作先做归属校验（服务端资源级鉴权，防止 IDOR）。"""
+    book = (
+        db.query(Book)
+        .filter(Book.id == book_id, Book.user_id == user_id, Book.deleted_at.is_(None))
+        .first()
+    )
+    if not book:
+        raise HTTPException(status_code=404, detail="回忆录不存在")
+    return book
+
+
+def _is_family_member(db: Session, family_id: str | None, user_id: str) -> bool:
+    if not family_id:
+        return False
+    return (
+        db.query(FamilyMember)
+        .filter(
+            FamilyMember.family_id == family_id,
+            FamilyMember.user_id == user_id,
+            FamilyMember.deleted_at.is_(None),
+        )
+        .first()
+        is not None
+    )
+
+
+def _owned_story_ids(db: Session, book: Book, story_ids: list[str] | None) -> list[str]:
+    """章节只能引用本人故事，避免通过导出读取他人内容。"""
+    if not story_ids:
+        return []
+    return [
+        s.id
+        for s in db.query(Story)
+        .filter(
+            Story.id.in_(story_ids),
+            Story.user_id == book.user_id,
+            Story.deleted_at.is_(None),
+        )
+        .all()
+    ]
 
 
 class BookIn(BaseModel):
@@ -39,6 +87,9 @@ class ChapterIn(BaseModel):
 
 @router.post("", status_code=201)
 def create_book(payload: BookIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    # 书籍可归属家庭空间，但必须验证当前用户确为该家庭成员（多家庭不串号）。
+    if payload.family_id and not _is_family_member(db, payload.family_id, user.id):
+        raise HTTPException(status_code=403, detail="不是该家庭的成员，无法在其中创建回忆录")
     book = Book(
         user_id=user.id, family_id=payload.family_id, title=payload.title,
         subtitle=payload.subtitle, author=payload.author, template=payload.template,
@@ -51,24 +102,32 @@ def create_book(payload: BookIn, user=Depends(get_current_user), db: Session = D
 
 @router.get("")
 def list_books(user=Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(Book).filter(Book.user_id == user.id, Book.deleted_at.is_(None)).all()
+    return (
+        db.query(Book)
+        .filter(Book.user_id == user.id, Book.deleted_at.is_(None))
+        .order_by(Book.created_at.desc())
+        .all()
+    )
 
 
 @router.get("/{book_id}")
 def get_book(book_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    book = db.query(Book).filter(Book.id == book_id, Book.user_id == user.id).first()
-    if not book:
-        raise HTTPException(status_code=404, detail="回忆录不存在")
-    chapters = db.query(BookChapter).filter(BookChapter.book_id == book_id).order_by(BookChapter.order_index).all()
+    book = _owned_book(db, book_id, user.id)
+    chapters = (
+        db.query(BookChapter)
+        .filter(BookChapter.book_id == book.id)
+        .order_by(BookChapter.order_index, BookChapter.created_at)
+        .all()
+    )
     return {"book": book, "chapters": chapters}
 
 
 @router.post("/{book_id}/chapters", status_code=201)
 def add_chapter(book_id: str, payload: ChapterIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    book = db.query(Book).filter(Book.id == book_id, Book.user_id == user.id).first()
-    if not book:
-        raise HTTPException(status_code=404, detail="回忆录不存在")
-    ch = BookChapter(book_id=book_id, **payload.model_dump())
+    book = _owned_book(db, book_id, user.id)
+    data = payload.model_dump()
+    data["story_ids"] = _owned_story_ids(db, book, data.get("story_ids"))
+    ch = BookChapter(book_id=book.id, **data)
     db.add(ch)
     db.commit()
     db.refresh(ch)
@@ -80,10 +139,12 @@ def update_chapter(chapter_id: str, payload: ChapterIn, user=Depends(get_current
     ch = db.query(BookChapter).filter(BookChapter.id == chapter_id).first()
     if not ch:
         raise HTTPException(status_code=404, detail="章节不存在")
-    book = db.query(Book).filter(Book.id == ch.book_id, Book.user_id == user.id).first()
-    if not book:
-        raise HTTPException(status_code=403, detail="无权修改")
-    for k, v in payload.model_dump().items():
+    book = _owned_book(db, ch.book_id, user.id)
+    # 部分更新：前端可通过只传 order_index 实现上移/下移，不覆盖标题与正文。
+    data = payload.model_dump(exclude_unset=True)
+    if "story_ids" in data:
+        data["story_ids"] = _owned_story_ids(db, book, data.get("story_ids"))
+    for k, v in data.items():
         setattr(ch, k, v)
     db.commit()
     return ch
@@ -94,9 +155,7 @@ def delete_chapter(chapter_id: str, user=Depends(get_current_user), db: Session 
     ch = db.query(BookChapter).filter(BookChapter.id == chapter_id).first()
     if not ch:
         raise HTTPException(status_code=404, detail="章节不存在")
-    book = db.query(Book).filter(Book.id == ch.book_id, Book.user_id == user.id).first()
-    if not book:
-        raise HTTPException(status_code=403, detail="无权删除")
+    _owned_book(db, ch.book_id, user.id)
     db.delete(ch)
     db.commit()
     return {"message": "章节已删除"}

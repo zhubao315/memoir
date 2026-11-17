@@ -123,25 +123,65 @@ def get_story(db: Session, story_id: str, user_id: str) -> Story:
     return story
 
 
-def source_text(db: Session, recording_id: str | None, memory_id: str | None, interview_id: str | None) -> str:
+def source_text(
+    db: Session,
+    user_id: str,
+    recording_id: str | None = None,
+    memory_id: str | None = None,
+    interview_id: str | None = None,
+) -> str:
+    """读取「当前用户本人」的素材原文（IDOR 防护）。
+
+    任何资源 id 都必须同时满足归属校验；跨用户或已删除的资源一律 404，
+    不返回内容、也不泄漏资源是否存在。调用方必须显式传入 user_id。
+    """
     if recording_id:
+        from app.models.media import Recording
+
+        rec = (
+            db.query(Recording)
+            .filter(
+                Recording.id == recording_id,
+                Recording.user_id == user_id,
+                Recording.deleted_at.is_(None),
+            )
+            .first()
+        )
+        if not rec:
+            raise HTTPException(status_code=404, detail="录音不存在")
+        # 逐字稿同样做归属校验，避免被篡改的 recording_id 关联到他人文本。
         t = (
             db.query(Transcript)
-            .filter(Transcript.recording_id == recording_id)
+            .filter(Transcript.recording_id == recording_id, Transcript.user_id == user_id)
             .order_by(Transcript.created_at.desc())
             .first()
         )
         if t:
             return t.content
+        # 尚无逐字稿时保持原有回退语义：继续尝试其它来源。
+
     if memory_id:
         from app.models.memory import Memory
 
-        m = db.query(Memory).filter(Memory.id == memory_id).first()
-        if m:
-            return m.raw_content or ""
-    if interview_id:
-        from app.models.story import InterviewMessage
+        m = (
+            db.query(Memory)
+            .filter(Memory.id == memory_id, Memory.user_id == user_id, Memory.deleted_at.is_(None))
+            .first()
+        )
+        if not m:
+            raise HTTPException(status_code=404, detail="记忆不存在")
+        return m.raw_content or ""
 
+    if interview_id:
+        from app.models.story import Interview, InterviewMessage
+
+        interview = (
+            db.query(Interview)
+            .filter(Interview.id == interview_id, Interview.user_id == user_id, Interview.deleted_at.is_(None))
+            .first()
+        )
+        if not interview:
+            raise HTTPException(status_code=404, detail="访谈不存在")
         msgs = (
             db.query(InterviewMessage)
             .filter(InterviewMessage.interview_id == interview_id, InterviewMessage.role == "interviewee")

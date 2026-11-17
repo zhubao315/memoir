@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import log_action
 from app.core.deps import get_current_user, get_db
+from app.core.security import utcnow
+from app.models.family import FamilyMember
 from app.models.memory import Memory
 from app.models.media import MediaAsset
 from app.schemas.memory import MemoryIn, MemoryOut, MemoryUpdate
@@ -17,6 +19,23 @@ from app.services.media import signed_url_for
 from app.services.tasks import create_job, enqueue
 
 router = APIRouter(prefix="/memories", tags=["memory-vault"])
+
+
+def _require_family_access(db: Session, family_id: str | None, user_id: str) -> None:
+    """校验家庭空间成员身份，防止把记忆写入他人的家庭（IDOR 加固）。"""
+    if not family_id:
+        return
+    member = (
+        db.query(FamilyMember)
+        .filter(
+            FamilyMember.family_id == family_id,
+            FamilyMember.user_id == user_id,
+            FamilyMember.deleted_at.is_(None),
+        )
+        .first()
+    )
+    if not member:
+        raise HTTPException(status_code=403, detail="无权访问该家庭空间")
 
 
 class MemoryMediaOut(BaseModel):
@@ -81,6 +100,7 @@ def list_memories(
 
 @router.post("", response_model=MemoryOut, status_code=201)
 def create_memory(payload: MemoryIn, background: BackgroundTasks, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_family_access(db, payload.family_id, user.id)
     m = Memory(
         user_id=user.id,
         creator_id=user.id,
@@ -144,7 +164,8 @@ def purge_memory(memory_id: str, user=Depends(get_current_user), db: Session = D
     m = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id, Memory.deleted_at.isnot(None)).first()
     if not m:
         raise HTTPException(status_code=404, detail="回收站中没有该记忆")
-    db.query(MediaAsset).filter(MediaAsset.memory_id == m.id).delete()
+    # 即便按 memory_id 级联清理，也要带 user_id 过滤，避免误删他人同名关联资产。
+    db.query(MediaAsset).filter(MediaAsset.memory_id == m.id, MediaAsset.user_id == user.id).delete()
     db.delete(m)
     db.commit()
     log_action("memory.purge", user_id=user.id, resource_type="memory", resource_id=m.id)
@@ -156,8 +177,6 @@ def delete_memory(memory_id: str, user=Depends(get_current_user), db: Session = 
     m = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id, Memory.deleted_at.is_(None)).first()
     if not m:
         raise HTTPException(status_code=404, detail="记忆不存在")
-    from app.core.security import utcnow
-
     m.deleted_at = utcnow()  # soft delete
     db.commit()
     log_action("memory.soft_delete", user_id=user.id, resource_type="memory", resource_id=m.id)

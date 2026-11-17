@@ -34,3 +34,23 @@ export function Stat({ value, label, icon, onClick }: { value: ReactNode; label:
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return <div className="field"><label>{label}</label>{children}</div>
 }
+
+export function Skeleton({ rows = 3, height = 16 }: { rows?: number; height?: number }) {
+  return (
+    <div className="skeleton-wrap" aria-hidden="true">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="skeleton-line" style={{ height, width: `${90 - (i % 3) * 12}%` }} />
+      ))}
+    </div>
+  )
+}
+
+export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div className="empty error-state">
+      <div className="ico">⚠</div>
+      <div>{message}</div>
+      {onRetry && <button className="btn primary sm" onClick={onRetry}>重试</button>}
+    </div>
+  )
+}
