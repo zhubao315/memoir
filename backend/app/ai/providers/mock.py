@@ -46,6 +46,16 @@ class MockLLM(LLMProvider):
                 latency_ms=int((time.time() - start) * 1000),
             )
 
+        # RAG Q&A must not be routed through the story writer.
+        if "私人记忆助手" in system:
+            return GenerationResult(
+                text=self._rag_response(user),
+                provider=self.name,
+                model=model or "mock-rag-v1",
+                prompt_version=pv,
+                latency_ms=int((time.time() - start) * 1000),
+            )
+
         mode = "story"
         m = re.search(r"OUTPUT_MODE:\s*(\w+)", system)
         if m:
@@ -109,6 +119,18 @@ class MockLLM(LLMProvider):
             else ""
         )
         return lead + body + tail
+
+    def _rag_response(self, user: str) -> str:
+        """Grounded mock answer: cite numbered evidence instead of free-styling."""
+        lines = user.splitlines()
+        evidence = [re.sub(r"^\[\d+\]\s*", "", line.strip()) for line in lines if re.match(r"^\[\d+\]", line.strip())]
+        if not evidence:
+            return "没有找到相关记忆。"
+        top = evidence[0][:160]
+        return (
+            f"根据你授权的记忆，我找到相关内容：{top} [1]\n"
+            "（离线 Mock 回答，仅演示引用流程；配置真实模型后将生成自然语言答案。）"
+        )
 
     def _json_response(self, user: str) -> str:
         """Structured extraction/follow-up used by fact extraction & interviewer."""

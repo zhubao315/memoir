@@ -55,6 +55,16 @@ def retrieve(db: Session, user_id: str, query: str, top_k: int = 5, family_id: s
         text = _source_text(db, r)
         if not text:
             continue
+        # Honesty guard for the offline Mock: weak hash embeddings can produce
+        # spurious similarity. Require at least one shared meaningful term so we
+        # never fabricate an answer to an unrelated question. Real embedding
+        # providers skip this lexical check via their stronger vectors.
+        from app.core.config import settings
+
+        if settings.AI_PROVIDER.lower() == "mock":
+            terms = {query[i:i+2] for i in range(len(query) - 1) if not query[i].isspace()}
+            if not any(term in text for term in terms if len(term) > 1):
+                continue
         out.append(
             {
                 "score": round(score, 4),
