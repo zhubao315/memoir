@@ -12,7 +12,7 @@ import { LifeGraph } from './features/graph/LifeGraph'
 import { FamilyCircle } from './features/family/FamilyCircle'
 import { LegacyBook } from './features/book/LegacyBook'
 import { DigitalLegacy } from './features/legacy/DigitalLegacy'
-import { Settings } from './features/settings/Settings'
+import { SettingsWithActivity } from './features/settings/Settings'
 import { GlobalSearch } from './features/search/GlobalSearch'
 import { getToken } from './services/api'
 
@@ -36,7 +36,7 @@ export default function App() {
           <Route path="/family" element={<Protected><FamilyCircle /></Protected>} />
           <Route path="/book" element={<Protected><LegacyBook /></Protected>} />
           <Route path="/legacy" element={<Protected><DigitalLegacy /></Protected>} />
-          <Route path="/settings" element={<Protected><Settings /></Protected>} />
+          <Route path="/settings" element={<Protected><SettingsWithActivity /></Protected>} />
           <Route path="/search" element={<Protected><GlobalSearch /></Protected>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

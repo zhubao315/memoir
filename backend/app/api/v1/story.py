@@ -265,7 +265,8 @@ def get_recording(recording_id: str, user=Depends(get_current_user), db: Session
     transcripts = (
         db.query(Transcript)
         .filter(Transcript.recording_id == rec.id, Transcript.user_id == user.id)
-        .order_by(Transcript.created_at.desc())
+        # 人工修正副本优先、再按时间倒序：列表首项即「当前应采用的逐字稿」。
+        .order_by(Transcript.is_corrected.desc(), Transcript.created_at.desc())
         .all()
     )
     asset = None

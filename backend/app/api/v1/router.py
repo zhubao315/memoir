@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    activity,
     ai,
     auth,
     book,
@@ -27,6 +28,7 @@ api_router.include_router(digital_legacy.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(ai.router)
 api_router.include_router(search.router)
+api_router.include_router(activity.router)
 
 # Legacy v0.1 REST API is mounted separately in main.py at its original /api paths.
 __all__ = ["api_router", "legacy_router"]

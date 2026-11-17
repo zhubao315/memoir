@@ -153,7 +153,8 @@ def source_text(
         t = (
             db.query(Transcript)
             .filter(Transcript.recording_id == recording_id, Transcript.user_id == user_id)
-            .order_by(Transcript.created_at.desc())
+            # 优先采用人工修正副本，其次取最新一条；原始转写始终保留。
+            .order_by(Transcript.is_corrected.desc(), Transcript.created_at.desc())
             .first()
         )
         if t:

@@ -168,7 +168,7 @@ def create_policy(payload: PolicyIn, user=Depends(get_current_user), db: Session
     )
     db.commit()
     db.refresh(policy)
-    return policy
+    return _policy_dict(policy)
 
 
 @router.post("/policies/{policy_id}/grant")
@@ -201,17 +201,18 @@ def revoke(policy_id: str, user=Depends(get_current_user), db: Session = Depends
     db.commit()
     db.refresh(policy)
     log_action("legacy.revoke", user_id=user.id, resource_type="policy", resource_id=policy.id)
-    return policy
+    return _policy_dict(policy)
 
 
 @router.get("/policies")
 def list_policies(user=Depends(get_current_user), db: Session = Depends(get_db)):
-    return (
+    rows = (
         db.query(LegacyPolicy)
         .filter(LegacyPolicy.user_id == user.id)
         .order_by(LegacyPolicy.created_at.desc())
         .all()
     )
+    return [_policy_dict(p) for p in rows]
 
 
 @router.get("/policies/{policy_id}/events")

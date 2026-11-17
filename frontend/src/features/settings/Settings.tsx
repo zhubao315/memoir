@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { get, post, setToken, setUser } from '../../services/api'
 import { Card, Field } from '../../components/ui'
 import { useToast } from '../../components/Toast'
+import { ActivityLog } from './Activity'
 
 export function Settings() {
   const [oldPw, setOldPw] = useState('')
@@ -65,6 +66,15 @@ export function Settings() {
           }}>导出</a>
         </div>
       </Card>
+    </div>
+  )
+}
+
+export function SettingsWithActivity() {
+  return (
+    <div>
+      <Settings />
+      <div style={{ marginTop: 18 }}><ActivityLog /></div>
     </div>
   )
 }

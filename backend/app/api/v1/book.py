@@ -85,6 +85,17 @@ class ChapterIn(BaseModel):
     order_index: int = 0
 
 
+class ChapterUpdateIn(BaseModel):
+    """章节部分更新：字段全部可选，支持仅传 order_index 实现上移/下移排序。"""
+
+    title: str | None = None
+    intro: str | None = None
+    content: str | None = None
+    story_ids: list[str] | None = None
+    media_ids: list[str] | None = None
+    order_index: int | None = None
+
+
 @router.post("", status_code=201)
 def create_book(payload: BookIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
     # 书籍可归属家庭空间，但必须验证当前用户确为该家庭成员（多家庭不串号）。
@@ -135,7 +146,7 @@ def add_chapter(book_id: str, payload: ChapterIn, user=Depends(get_current_user)
 
 
 @router.put("/chapters/{chapter_id}")
-def update_chapter(chapter_id: str, payload: ChapterIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def update_chapter(chapter_id: str, payload: ChapterUpdateIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
     ch = db.query(BookChapter).filter(BookChapter.id == chapter_id).first()
     if not ch:
         raise HTTPException(status_code=404, detail="章节不存在")
@@ -147,6 +158,7 @@ def update_chapter(chapter_id: str, payload: ChapterIn, user=Depends(get_current
     for k, v in data.items():
         setattr(ch, k, v)
     db.commit()
+    db.refresh(ch)  # commit 后对象过期，需刷新以便正确序列化响应
     return ch
 
 
