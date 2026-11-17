@@ -15,9 +15,10 @@ export function Auth() {
     e.preventDefault(); setError('')
     try {
       if (mode === 'register') {
-        await post('/api/auth/register', { username, email, password })
+        await post('/auth/register', { username, email, password })
       }
-      const data: any = await post('/api/auth/login', { username, password })
+      // api.ts already prefixes every path with BASE = '/api'
+      const data: any = await post('/auth/login', { username, password })
       setToken(data.access_token); setUser(data.user)
       nav('/')
     } catch (err: any) { setError(err.message) }
