@@ -145,6 +145,12 @@ button, input, textarea, select { font: inherit; }
 .menu-toggle { display: none; border: none; background: transparent; font-size: 22px; cursor: pointer; color: var(--deep-blue); }
 .nav-overlay { display: none; }
 
+.user-chip { font-size: 13px; color: var(--ink-soft); cursor: pointer; padding: 6px 10px; border-radius: 8px; }
+.user-chip:hover { background: var(--surface-2); color: var(--deep-blue); }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.setting-row:last-child { border-bottom: none; }
+.setting-desc { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+
 /* Skeletons & error states */
 .skeleton-wrap { display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
 .skeleton-line { border-radius: 6px; background: linear-gradient(90deg, #eef2f8 25%, #e2e9f4 50%, #eef2f8 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }

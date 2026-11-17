@@ -407,10 +407,27 @@ def current_version(story_id: str, user=Depends(get_current_user), db: Session =
 def regenerate(story_id: str, payload: RegenerateIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Create a NEW AI version from the original source using another narrative style."""
     story = story_service.get_story(db, story_id, user.id)
-    raw = story_service.source_text(db, story.source_recording_id, story.source_memory_id, story.source_interview_id)
+    # 同样做归属校验；旧故事若引用了不可访问的来源，退回到自己的当前版本改写，
+    # 绝不会借「换风格」读取他人素材。
+    try:
+        raw = story_service.source_text(
+            db,
+            user.id,
+            story.source_recording_id,
+            story.source_memory_id,
+            story.source_interview_id,
+        )
+    except HTTPException as exc:
+        if exc.status_code != 404:
+            raise
+        raw = ""
     if not raw.strip():
         # Fallback: rewrite the current version (never overwrites it).
-        current = db.query(StoryVersion).filter(StoryVersion.id == story.current_version_id).first()
+        current = (
+            db.query(StoryVersion)
+            .filter(StoryVersion.id == story.current_version_id, StoryVersion.story_id == story.id)
+            .first()
+        )
         raw = current.content if current else ""
     if not raw.strip():
         raise HTTPException(status_code=400, detail="没有可用的原始内容")

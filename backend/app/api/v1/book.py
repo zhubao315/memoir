@@ -166,7 +166,12 @@ def _render_markdown(db: Session, book: Book) -> str:
     for ch in db.query(BookChapter).filter(BookChapter.book_id == book.id).order_by(BookChapter.order_index).all():
         lines += ["", f"## {ch.title}", "", ch.intro or "", ch.content or ""]
         for sid in ch.story_ids or []:
-            story = db.query(Story).filter(Story.id == sid).first()
+            # 只渲染本人故事，杜绝通过构造 story_ids 读取他人内容。
+            story = (
+                db.query(Story)
+                .filter(Story.id == sid, Story.user_id == book.user_id, Story.deleted_at.is_(None))
+                .first()
+            )
             if story and story.current_version_id:
                 v = db.query(StoryVersion).filter(StoryVersion.id == story.current_version_id).first()
                 lines += ["", f"### {story.title or '无标题'}", "", v.content if v else ""]
@@ -201,7 +206,12 @@ def _render_pdf(db: Session, book: Book, path: Path) -> None:
     def read_image(asset_id: str | None, max_px: int = 1500):
         if not asset_id:
             return None
-        asset = db.query(MediaAsset).filter(MediaAsset.id == asset_id).first()
+        # 媒体同样按 owner 过滤：不能借章节的 media_ids 渲染他人私有图片。
+        asset = (
+            db.query(MediaAsset)
+            .filter(MediaAsset.id == asset_id, MediaAsset.user_id == book.user_id)
+            .first()
+        )
         if not asset or (asset.media_type and asset.media_type != "photo"):
             return None  # 跳过音频/视频/文档，只渲染图片
         try:
@@ -357,7 +367,11 @@ def _render_pdf(db: Session, book: Book, path: Path) -> None:
             para(ch.content, 10.5)
         draw_chapter_images(ch.media_ids)
         for sid in ch.story_ids or []:
-            story = db.query(Story).filter(Story.id == sid).first()
+            story = (
+                db.query(Story)
+                .filter(Story.id == sid, Story.user_id == book.user_id, Story.deleted_at.is_(None))
+                .first()
+            )
             if not story or not story.current_version_id:
                 continue
             version = db.query(StoryVersion).filter(StoryVersion.id == story.current_version_id).first()
@@ -383,18 +397,30 @@ def _render_pdf(db: Session, book: Book, path: Path) -> None:
 def export(book_id: str, format: str = "markdown", user=Depends(get_current_user), db: Session = Depends(get_db)):
     if format not in ("pdf", "markdown", "json"):
         raise HTTPException(status_code=400, detail="当前支持 pdf / markdown / json；EPUB 后续版本提供")
-    book = db.query(Book).filter(Book.id == book_id, Book.user_id == user.id).first()
-    if not book:
-        raise HTTPException(status_code=404, detail="回忆录不存在")
+    book = _owned_book(db, book_id, user.id)
     out_dir = settings.upload_dir / "exports" / user.id
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{book.id}.{format}"
     if format == "markdown":
         path.write_text(_render_markdown(db, book), encoding="utf-8")
     elif format == "json":
-        chapters = db.query(BookChapter).filter(BookChapter.book_id == book.id).order_by(BookChapter.order_index).all()
+        chapters = (
+            db.query(BookChapter)
+            .filter(BookChapter.book_id == book.id)
+            .order_by(BookChapter.order_index)
+            .all()
+        )
+        # 导出内容只含本人数据；file_path 等内部信息不写入响应。
         path.write_text(
-            json.dumps({"book": {"id": book.id, "title": book.title, "author": book.author}, "chapters": [c.__dict__ for c in chapters]}, ensure_ascii=False, default=str, indent=2),
+            json.dumps(
+                {
+                    "book": {"id": book.id, "title": book.title, "author": book.author},
+                    "chapters": [c.__dict__ for c in chapters],
+                },
+                ensure_ascii=False,
+                default=str,
+                indent=2,
+            ),
             encoding="utf-8",
         )
     else:
@@ -403,18 +429,56 @@ def export(book_id: str, format: str = "markdown", user=Depends(get_current_user
     db.add(job)
     book.status = "exported"
     db.commit()
+    log_action("book.export", user_id=user.id, resource_type="book", resource_id=book.id, detail=format)
     return FileResponse(str(path), filename=f"{book.title}.{format}")
+
+
+@router.get("/{book_id}/qr")
+def list_qr(book_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """列出书籍的二维码及其状态，供前端展示与撤销（仅本人）。"""
+    book = _owned_book(db, book_id, user.id)
+    rows = (
+        db.query(BookQRCode)
+        .filter(BookQRCode.book_id == book.id)
+        .order_by(BookQRCode.created_at.desc())
+        .all()
+    )
+    return [
+        {
+            "id": q.id,
+            "story_id": q.story_id,
+            "token": q.token,
+            "url": f"/public/story/{q.token}",
+            "status": q.status,
+            "revoked_at": q.revoked_at,
+            "created_at": q.created_at,
+        }
+        for q in rows
+    ]
 
 
 @router.post("/{book_id}/qr", status_code=201)
 def create_qr(book_id: str, story_id: str | None = None, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    book = db.query(Book).filter(Book.id == book_id, Book.user_id == user.id).first()
-    if not book:
-        raise HTTPException(status_code=404, detail="回忆录不存在")
+    book = _owned_book(db, book_id, user.id)
+    if story_id:
+        story = (
+            db.query(Story)
+            .filter(Story.id == story_id, Story.user_id == user.id, Story.deleted_at.is_(None))
+            .first()
+        )
+        if not story:
+            raise HTTPException(status_code=404, detail="故事不存在或无访问权限")
+        if story.visibility not in PUBLIC_VISIBILITY:
+            raise HTTPException(
+                status_code=400,
+                detail="私有故事不能生成公开二维码，请先将故事可见性设为 family 或 public",
+            )
     qr = BookQRCode(book_id=book.id, story_id=story_id, token=secrets.token_urlsafe(24), status="active")
     db.add(qr)
     db.commit()
     db.refresh(qr)
+    log_action("book.qr.create", user_id=user.id, resource_type="book", resource_id=book.id)
+    # 只返回不稳定的公开 token 与相对 URL，绝不返回存储路径或 target_url。
     return {"id": qr.id, "token": qr.token, "url": f"/public/story/{qr.token}", "status": qr.status}
 
 
@@ -423,23 +487,55 @@ def revoke_qr(qr_id: str, user=Depends(get_current_user), db: Session = Depends(
     qr = db.query(BookQRCode).filter(BookQRCode.id == qr_id).first()
     if not qr:
         raise HTTPException(status_code=404, detail="二维码不存在")
-    book = db.query(Book).filter(Book.id == qr.book_id, Book.user_id == user.id).first()
-    if not book:
-        raise HTTPException(status_code=403, detail="无权操作")
-    qr.status = "revoked"
-    qr.revoked_at = utcnow()
-    db.commit()
-    return {"message": "二维码已撤销"}
+    _owned_book(db, qr.book_id, user.id)
+    if qr.status != "revoked":
+        qr.status = "revoked"
+        qr.revoked_at = str(utcnow())
+        db.commit()
+        log_action("book.qr.revoke", user_id=user.id, resource_type="book_qr_code", resource_id=qr.id)
+    return {"message": "二维码已撤销", "status": qr.status}
 
 
 @router.get("/public/story/{token}")
-def public_story(token: str, db: Session = Depends(get_db)):
-    """Stable, unpredictable public ID; permission-checked, revocable; never exposes storage paths."""
-    qr = db.query(BookQRCode).filter(BookQRCode.token == token, BookQRCode.status == "active").first()
+def public_story(
+    token: str,
+    user=Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    """公开故事页：token active + 可见性校验；private 不可匿名访问；不暴露任何存储路径。"""
+    qr = (
+        db.query(BookQRCode)
+        .filter(BookQRCode.token == token, BookQRCode.status == "active")
+        .first()
+    )
     if not qr or not qr.story_id:
         raise HTTPException(status_code=404, detail="故事页面不存在或已撤销")
-    story = db.query(Story).filter(Story.id == qr.story_id, Story.visibility.in_(["family", "public"])).first()
-    if not story:
+    story = (
+        db.query(Story)
+        .filter(Story.id == qr.story_id, Story.deleted_at.is_(None))
+        .first()
+    )
+    if not story or story.visibility not in PUBLIC_VISIBILITY:
         raise HTTPException(status_code=403, detail="该故事未授权公开访问")
-    version = db.query(StoryVersion).filter(StoryVersion.id == story.current_version_id).first()
-    return {"title": story.title, "content": version.content if version else "", "storyteller_id": story.storyteller_id}
+
+    if story.visibility == "family":
+        # 家庭可见 ≠ 匿名可见：必须登录，且是故事作者或家庭成员。
+        allowed = user is not None and (
+            user.id == story.user_id or _is_family_member(db, story.family_id, user.id)
+        )
+        if not allowed:
+            raise HTTPException(status_code=403, detail="家庭可见故事需要登录并以家庭成员身份访问")
+
+    version = (
+        db.query(StoryVersion)
+        .filter(StoryVersion.id == story.current_version_id)
+        .first()
+        if story.current_version_id
+        else None
+    )
+    return {
+        "title": story.title,
+        "content": version.content if version else "",
+        "storyteller_id": story.storyteller_id,
+        "visibility": story.visibility,
+    }

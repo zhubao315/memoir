@@ -12,6 +12,7 @@ import { LifeGraph } from './features/graph/LifeGraph'
 import { FamilyCircle } from './features/family/FamilyCircle'
 import { LegacyBook } from './features/book/LegacyBook'
 import { DigitalLegacy } from './features/legacy/DigitalLegacy'
+import { Settings } from './features/settings/Settings'
 import { getToken } from './services/api'
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/family" element={<Protected><FamilyCircle /></Protected>} />
           <Route path="/book" element={<Protected><LegacyBook /></Protected>} />
           <Route path="/legacy" element={<Protected><DigitalLegacy /></Protected>} />
+          <Route path="/settings" element={<Protected><Settings /></Protected>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

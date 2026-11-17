@@ -69,7 +69,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <button className="btn ghost sm" onClick={() => setSimple(!simple)} title="切换老年简洁模式">
               {simple ? 'Aa 标准' : 'Aa 简洁模式'}
             </button>
-            <span style={{ fontSize: 13, color: '#5b6b85' }}>{user?.username || ''}</span>
+            <span className="user-chip" onClick={() => nav('/settings')} title="账户设置">{user?.username || ''} ⚙</span>
             <button className="btn ghost sm" onClick={logout}>退出</button>
           </div>
         </header>

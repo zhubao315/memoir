@@ -149,7 +149,6 @@ async def upload(
     asset = persist_asset(db, user.id, data, file.filename or "file", mime, media_type, family_id=family_id, memory_id=memory_id)
     out = MediaOut.model_validate(asset)
     out.url = signed_url_for(asset)
-    log_action("media.upload", user_id=user.id, resource_type="media", resource_id=asset.id)
     return out
 
 
