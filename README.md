@@ -1,208 +1,67 @@
-# 数字人生回忆录 - MVP版本
+# Memoir
 
-一个简单但功能完整的数字人生回忆录应用，帮助你记录和回顾人生重要时刻。
+**Your Life. Your Stories. Your Legacy.**
 
-## 🎯 功能特性
+AI 原生个人记忆、人生故事、家庭记忆与数字传承平台。从一个人的记忆开始，构建一个家庭的数字记忆资产。
 
-### 核心功能
-- ✅ **用户系统** - 注册、登录、JWT认证
-- ✅ **记忆条目** - 创建、查看、编辑、删除记忆
-- ✅ **时间线视图** - 按时间顺序浏览所有记忆
-- ✅ **标签系统** - 自定义标签分类
-- ✅ **心情追踪** - 记录每天的心情（开心、兴奋、平静、伤心、生气、一般）
-- ✅ **媒体上传** - 支持照片、视频、音频上传
-- ✅ **位置标记** - 记录记忆发生的位置
-- ✅ **快速记录** - 一键快速保存想法
-
-### 技术栈
-- **后端**: FastAPI + SQLite (无需数据库服务)
-- **前端**: 纯HTML/CSS/JavaScript (无框架依赖)
-- **部署**: Nginx反向代理
-
-## 🚀 快速开始
-
-### 1. 部署应用
-
-```bash
-cd /fs/memoir
-bash deploy.sh
-```
-
-### 2. 启动后端服务
-
-```bash
-cd /fs/memoir
-bash start.sh
-```
-
-后端将在 `http://192.168.1.22:8000` 运行
-
-### 3. 访问应用
-
-打开浏览器访问: **http://192.168.1.22/memoir/**
-
-## 📖 使用指南
-
-### 注册/登录
-1. 首次使用点击"立即注册"
-2. 输入用户名、邮箱和密码
-3. 注册后自动登录
-
-### 创建记忆
-**方式一：快速记录**
-- 在首页输入标题和内容
-- 选择心情
-- 点击"保存"
-
-**方式二：详细编辑**
-- 点击"详细编辑"按钮
-- 填写完整信息（标题、内容、日期、类型、心情、标签、位置）
-- 上传媒体文件（照片、视频、音频）
-- 点击"保存"
-
-### 浏览记忆
-- **首页**: 查看最近5条记忆
-- **时间线**: 点击导航栏"时间线"查看所有记忆
-- **筛选**: 按类型、心情筛选
-
-### 管理标签
-- 点击侧边栏"标签"区域的"+"按钮
-- 输入标签名称和选择颜色
-- 在创建记忆时使用标签
-
-### 查看详情
-- 点击任何记忆条目查看详情
-- 查看媒体文件
-- 编辑或删除记忆
-
-## 📁 文件结构
-
-```
-/memoir/
-├── backend/
-│   └── main.py          # FastAPI后端
-├── frontend/
-│   └── index.html       # 前端页面
-├── uploads/             # 上传的媒体文件
-├── start.sh             # 启动脚本
-├── deploy.sh            # 部署脚本
-├── nginx.conf           # Nginx配置
-└── README.md            # 说明文档
-```
-
-## 🔧 API接口
-
-后端提供RESTful API，访问: http://192.168.1.22:8000/docs
-
-### 主要端点
-
-| 端点 | 方法 | 描述 |
-|------|------|------|
-| `/api/auth/register` | POST | 用户注册 |
-| `/api/auth/login` | POST | 用户登录 |
-| `/api/auth/me` | GET | 获取当前用户信息 |
-| `/api/entries` | GET | 获取记忆列表 |
-| `/api/entries` | POST | 创建记忆 |
-| `/api/entries/{id}` | GET | 获取单个记忆 |
-| `/api/entries/{id}` | PUT | 更新记忆 |
-| `/api/entries/{id}` | DELETE | 删除记忆 |
-| `/api/entries/{id}/media` | POST | 上传媒体文件 |
-| `/api/entries/{id}/media` | GET | 获取媒体列表 |
-| `/api/tags` | GET | 获取标签列表 |
-| `/api/tags` | POST | 创建标签 |
-| `/api/stats` | GET | 获取统计信息 |
-
-## 🎨 界面说明
-
-### 首页
-- **快速记录区**: 快速保存想法
-- **最近记忆**: 查看最新5条记忆
-- **统计概览**: 显示条目、媒体、标签数量
-- **标签管理**: 查看和管理标签
-
-### 时间线
-- 按日期分组显示所有记忆
-- 支持按类型和心情筛选
-- 点击条目查看详情
-
-### 记忆详情
-- 显示完整信息
-- 查看媒体文件（点击放大）
-- 编辑或删除操作
-
-## 📊 数据存储
-
-- **数据库**: SQLite (`/fs/memoir/backend/memoir.db`)
-- **媒体文件**: `/fs/memoir/uploads/`
-- **自动备份**: 数据库文件可直接复制备份
-
-## 🔒 安全说明
-
-- 使用JWT进行身份验证
-- 密码使用bcrypt加密存储
-- 每个用户只能访问自己的数据
-- 媒体文件按用户ID隔离存储
-
-## 🛠️ 开发与扩展
-
-### 添加新功能
-1. 修改 `backend/main.py` 添加新API
-2. 修改 `frontend/index.html` 添加新界面
-3. 重启后端服务
-
-### 迁移到PostgreSQL
-1. 安装PostgreSQL
-2. 修改 `SQLALCHEMY_DATABASE_URL`
-3. 运行数据库迁移
-
-### 添加AI功能
-- 集成OpenAI API进行内容分析
-- 使用向量搜索实现智能回忆
-- 添加情感分析
-
-## 📝 常见问题
-
-**Q: 如何重置密码？**
-A: 目前MVP版本不支持重置密码，请妥善保管密码。
-
-**Q: 上传文件大小限制？**
-A: 默认限制100MB，可在Nginx配置中修改。
-
-**Q: 如何备份数据？**
-A: 复制 `/fs/memoir/backend/memoir.db` 和 `/fs/memoir/uploads/` 目录。
-
-**Q: 如何停止服务？**
-A: 在运行 `start.sh` 的终端按 `Ctrl+C`。
-
-## 🚀 下一步计划
-
-### Phase 2 (增强功能)
-- [ ] 情绪追踪可视化图表
-- [ ] 里程碑/成就系统
-- [ ] 全文搜索
-- [ ] 数据导入/导出
-- [ ] 响应式移动端适配
-
-### Phase 3 (AI增强)
-- [ ] AI对话助手
-- [ ] 智能标签建议
-- [ ] 记忆关联推荐
-- [ ] 年度报告生成
-
-### Phase 4 (高级功能)
-- [ ] 移动端App (Flutter)
-- [ ] 音频日记
-- [ ] 视频支持
-- [ ] 高级地图功能
-- [ ] 家庭共享
-- [ ] 端到端加密
-
-## 📞 支持
-
-如有问题或建议，请联系管理员。
+> 本次迭代：从 v0.1 MVP 系统性升级为产品级模块化架构（v1.0.0）。
+> 详细进度见 [`docs/PROGRESS.md`](docs/PROGRESS.md)，真实完成情况与未完成项均记录于此。
 
 ---
 
-**版本**: 0.1.0
-**更新时间**: 2026-01-29
-**作者**: Claude Code
+## 六大产品中心
+
+| 中心 | 说明 |
+| --- | --- |
+| **Life Studio** 人生工作台 | 登录后的默认首页：记忆/故事/媒体统计、每日记忆问题、最近记录、里程碑 |
+| **Memory Vault** 个人记忆库 | 多模态记忆、时间线、实体与人物关联、语义检索；原始数据不可被 AI 覆盖 |
+| **Story Studio** AI 故事工作室 | 200 条中文问题库、AI 动态访谈、语音录制与转录、7 种叙事模式、多版本与事实保护 |
+| **Family Circle** 家庭记忆空间 | 家庭空间、邀请、角色权限（owner/admin/storyteller/collaborator/viewer）、协作 |
+| **Legacy Book** 回忆录出版 | 书籍/章节、PDF/Markdown/JSON 导出、可撤销的故事二维码 |
+| **Digital Legacy** 数字传承 | 传承联系人、显式授权策略、可撤销、人工审核；绝不自动交付数据 |
+
+## 核心设计原则
+
+1. **原始不可覆盖**：录音、逐字稿、AI 故事、人工修改分开保存，原始录音无覆盖接口。
+2. **明确归属**：所有数据有 `user_id`，可选 `family_id`，服务端强制过滤（防 IDOR）。
+3. **AI 可追溯**：每次生成记录模型、Prompt 版本、输入引用与时间；不确定信息标记「待确认」，不编造。
+4. **向后兼容**：保留 v0.1 全部 REST API 与原数据库；新能力在 `/api/v1/*`。
+5. **诚实集成**：无 API Key 时使用明确标注的离线 Mock，不伪造真实 AI 服务已接通。
+
+## 技术栈
+
+- 前端：React + TypeScript + Vite（新设计系统、响应式、老年简洁模式）
+- 后端：FastAPI + Pydantic v2 + SQLAlchemy 2.x（模块化单体 + 独立 Worker）
+- 数据：SQLite（开发）/ PostgreSQL + pgvector（生产），Alembic 迁移
+- 存储：Local（HMAC 签名 URL）/ S3 兼容（MinIO）
+- AI：Provider Adapter（OpenAI-compatible / Anthropic-compatible / Local / Mock）+ ASR Adapter
+- 部署：Docker Compose + Nginx
+
+## 快速开始
+
+```bash
+# 后端（默认 SQLite + 本地存储 + Mock AI，零外部依赖）
+cd backend && pip install -r requirements.txt && uvicorn main:app --reload
+
+# 前端
+cd frontend && npm install && npm run dev
+```
+
+完整部署、迁移、API、使用文档见 [`docs/`](docs/)：
+
+- [部署指南](docs/DEPLOYMENT.md)
+- [API 文档](docs/API.md)
+- [用户手册](docs/USER_MANUAL.md)
+- [审计报告](docs/audit/PROJECT_AUDIT.md) · [安全审计](docs/audit/SECURITY_AUDIT.md) · [数据模型审计](docs/audit/DATA_MODEL_AUDIT.md)
+- [目标架构](docs/architecture/TARGET_ARCHITECTURE.md) · [决策记录](docs/DECISIONS.md) · [变更记录](docs/CHANGELOG.md)
+
+## 测试
+
+```bash
+cd backend && pytest tests -q     # 11 passed
+cd frontend && npm run build      # 构建通过
+```
+
+## 版本
+
+v1.0.0 · 2026-11-17
