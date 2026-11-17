@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { get, post } from '../../services/api'
 import { Card, Empty, Field, Loading } from '../../components/ui'
 import { useToast } from '../../components/Toast'
@@ -9,7 +10,20 @@ const MODES = [
 ]
 
 export function StoryStudio() {
-  const [tab, setTab] = useState<'generate' | 'interview' | 'stories'>('generate')
+  const [params, setParams] = useSearchParams()
+  const initial = params.get('tab')
+  const [tab, setTab] = useState<'generate' | 'interview' | 'stories'>(
+    initial === 'stories' || initial === 'interview' ? initial : 'generate'
+  )
+  const switchTab = (next: 'generate' | 'interview' | 'stories') => {
+    setTab(next)
+    const p = new URLSearchParams()
+    if (next !== 'generate') p.set('tab', next)
+    setParams(p, { replace: true })
+  }
+  useEffect(() => {
+    if (initial === 'stories' || initial === 'interview') setTab(initial)
+  }, [initial])
   const [memories, setMemories] = useState<any[]>([])
   const [memoryId, setMemoryId] = useState('')
   const [mode, setMode] = useState('first_person')
@@ -68,9 +82,9 @@ export function StoryStudio() {
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
-        <button className={`btn ${tab === 'generate' ? 'purple' : 'ghost'}`} onClick={() => setTab('generate')}>✎ 故事生成</button>
-        <button className={`btn ${tab === 'interview' ? 'purple' : 'ghost'}`} onClick={() => setTab('interview')}>◈ AI 人生访谈</button>
-        <button className={`btn ${tab === 'stories' ? 'purple' : 'ghost'}`} onClick={() => setTab('stories')}>▤ 我的故事</button>
+        <button className={`btn ${tab === 'generate' ? 'purple' : 'ghost'}`} onClick={() => switchTab('generate')}>✎ 故事生成</button>
+        <button className={`btn ${tab === 'interview' ? 'purple' : 'ghost'}`} onClick={() => switchTab('interview')}>◈ AI 人生访谈</button>
+        <button className={`btn ${tab === 'stories' ? 'purple' : 'ghost'}`} onClick={() => switchTab('stories')}>▤ 我的故事</button>
       </div>
 
       {tab === 'generate' && (

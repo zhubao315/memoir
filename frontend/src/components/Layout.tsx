@@ -5,6 +5,7 @@ import { currentUser, post, setToken, setUser } from '../services/api'
 const NAV = [
   { to: '/', ico: '⌂', label: '首页 · Life Studio', group: '工作台' },
   { to: '/memories', ico: '▤', label: '我的记忆 · Memory Vault', group: '工作台' },
+  { to: '/media', ico: '▧', label: '媒体库 · Media Gallery', group: '工作台' },
   { to: '/story', ico: '✎', label: 'AI 故事 · Story Studio', group: '创作' },
   { to: '/voice', ico: '◉', label: '语音录制 · Voice Studio', group: '创作' },
   { to: '/graph', ico: '◇', label: '人生图谱 · Life Graph', group: '创作' },

@@ -5,6 +5,7 @@ import { LightboxProvider } from './components/Lightbox'
 import { Auth } from './features/auth/Auth'
 import { Dashboard } from './features/dashboard/Dashboard'
 import { MemoryVault } from './features/memory/MemoryVault'
+import { MediaGallery } from './features/media/MediaGallery'
 import { StoryStudio } from './features/story/StoryStudio'
 import { VoiceStudio } from './features/story/VoiceStudio'
 import { LifeGraph } from './features/graph/LifeGraph'
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/login" element={<Auth />} />
           <Route path="/" element={<Protected><Dashboard /></Protected>} />
           <Route path="/memories" element={<Protected><MemoryVault /></Protected>} />
+          <Route path="/media" element={<Protected><MediaGallery /></Protected>} />
           <Route path="/story" element={<Protected><StoryStudio /></Protected>} />
           <Route path="/voice" element={<Protected><VoiceStudio /></Protected>} />
           <Route path="/graph" element={<Protected><LifeGraph /></Protected>} />

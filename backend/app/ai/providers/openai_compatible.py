@@ -59,11 +59,13 @@ class OpenAICompatibleASR(ASRProvider):
     name = "openai_compatible"
 
     def __init__(self):
-        if not settings.ASR_BASE_URL or not settings.ASR_API_KEY:
-            raise RuntimeError("ASR_BASE_URL and ASR_API_KEY must be configured")
+        if not settings.ASR_BASE_URL:
+            raise RuntimeError("ASR_BASE_URL must be configured")
+        # 服务可无需 API Key（如本地 qwen3-asr）。仅在配置了 Key 时才发送鉴权头。
+        headers = {"Authorization": f"Bearer {settings.ASR_API_KEY}"} if settings.ASR_API_KEY else {}
         self.client = httpx.Client(
             base_url=settings.ASR_BASE_URL.rstrip("/"),
-            headers={"Authorization": f"Bearer {settings.ASR_API_KEY}"},
+            headers=headers,
             timeout=180.0,
         )
 

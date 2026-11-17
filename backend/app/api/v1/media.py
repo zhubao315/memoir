@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from typing import List
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -34,9 +37,40 @@ class MediaOut(BaseModel):
         from_attributes = True
 
 
+class MediaListItem(MediaOut):
+    caption: str | None = None
+    created_at: datetime | None = None
+
+
 class UrlOut(BaseModel):
     url: str
     expires_in: int
+
+
+@router.get("", response_model=List[MediaListItem])
+def list_media(
+    media_type: str | None = None,
+    limit: int = 200,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List the current user's media assets with short-lived signed URLs.
+
+    media_type supports comma-separated values, e.g. 'audio,video'.
+    """
+    q = db.query(MediaAsset).filter(MediaAsset.user_id == user.id, MediaAsset.deleted_at.is_(None))
+    if media_type:
+        types = [t.strip() for t in media_type.split(",") if t.strip()]
+        if types:
+            q = q.filter(MediaAsset.media_type.in_(types))
+    rows = q.order_by(MediaAsset.created_at.desc()).limit(limit).all()
+    out = []
+    for a in rows:
+        item = MediaListItem.model_validate(a)
+        item.url = signed_url_for(a)
+        item.created_at = str(a.created_at) if a.created_at else None
+        out.append(item)
+    return out
 
 
 @router.get("/file")

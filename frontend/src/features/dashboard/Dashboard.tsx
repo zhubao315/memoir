@@ -23,10 +23,10 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-4" style={{ marginTop: 18 }}>
-        <Stat icon="▤" value={c.memories} label="记忆总数" />
-        <Stat icon="✎" value={c.stories} label="人生故事" />
-        <Stat icon="▧" value={c.photos} label="照片" />
-        <Stat icon="◉" value={c.audios + c.videos} label="音视频" />
+        <Stat icon="▤" value={c.memories} label="记忆总数" onClick={() => nav('/memories')} />
+        <Stat icon="✎" value={c.stories} label="人生故事" onClick={() => nav('/story?tab=stories')} />
+        <Stat icon="▧" value={c.photos} label="照片" onClick={() => nav('/media?type=photo')} />
+        <Stat icon="◉" value={c.audios + c.videos} label="音视频" onClick={() => nav('/media?type=audio,video')} />
       </div>
 
       <div className="grid grid-2" style={{ marginTop: 18 }}>

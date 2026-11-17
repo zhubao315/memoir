@@ -94,13 +94,16 @@ def _transcription(db: Session, job: AIJob) -> None:
     from app.storage import get_storage
 
     data = get_storage().read(asset.storage_key)
+    from app.ai.factory import get_asr
+
+    engine = get_asr().name
     text, raw = transcribe(data, asset.original_filename or "audio", asset.mime_type or "audio/mpeg")
     db.add(
         Transcript(
             recording_id=recording.id,
             user_id=job.user_id,
             content=text,
-            engine="mock" if "Mock" in text else "asr",
+            engine=engine,
             raw_response=raw,
         )
     )
