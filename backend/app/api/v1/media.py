@@ -72,6 +72,7 @@ class MediaOut(BaseModel):
 class MediaListItem(MediaOut):
     caption: str | None = None
     created_at: datetime | None = None
+    memory_id: str | None = None  # 当前归属的记忆，供前端“移动到其它记忆”回显
 
 
 class UrlOut(BaseModel):

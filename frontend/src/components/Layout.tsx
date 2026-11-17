@@ -65,6 +65,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <h1>{NAV.find((n) => n.to === path)?.label || 'Memoir'}</h1>
           </div>
           <div className="topbar-actions">
+            <button className="btn ghost sm" onClick={() => nav('/search')} title="全局搜索">⌕ 搜索</button>
             <button className="btn primary sm" onClick={() => nav('/memories')}>＋ 快速记录</button>
             <button className="btn ghost sm" onClick={() => setSimple(!simple)} title="切换老年简洁模式">
               {simple ? 'Aa 标准' : 'Aa 简洁模式'}

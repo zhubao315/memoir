@@ -145,6 +145,13 @@ button, input, textarea, select { font: inherit; }
 .menu-toggle { display: none; border: none; background: transparent; font-size: 22px; cursor: pointer; color: var(--deep-blue); }
 .nav-overlay { display: none; }
 
+.search-form { display: flex; gap: 8px; }
+.search-result { display: flex; align-items: center; gap: 12px; padding: 12px 8px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.search-result:hover { background: var(--surface-2); }
+.search-ico { width: 34px; height: 34px; border-radius: 9px; background: #eef2ff; color: var(--electric-blue); display: grid; place-items: center; flex-shrink: 0; }
+.search-snippet { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+.search-result > .chip { margin-left: auto; flex-shrink: 0; }
+
 .user-chip { font-size: 13px; color: var(--ink-soft); cursor: pointer; padding: 6px 10px; border-radius: 8px; }
 .user-chip:hover { background: var(--surface-2); color: var(--deep-blue); }
 .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line); }

@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.audit import log_action
@@ -45,26 +45,18 @@ class PolicyIn(BaseModel):
     release_after_days: int | None = Field(default=None, ge=1, le=3650)
     share_scope: list[str] | None = None
 
-    @field_validator("trigger")
-    @classmethod
-    def _trigger(cls, v: str) -> str:
-        if v not in ("manual", "scheduled"):
-            raise ValueError("trigger 必须为 manual / scheduled")
-        return v
 
-    @field_validator("share_scope")
-    @classmethod
-    def _scope(cls, v: list[str] | None) -> list[str]:
-        """share_scope 项格式为 'story:<id>' 或 'memory:<id>'；拒绝通配符。"""
-        if not v:
-            return []
-        for item in v:
-            if not isinstance(item, str) or ":" not in item:
-                raise ValueError("share_scope 格式为 'story:<id>' 或 'memory:<id>'")
-            kind, _rid = item.split(":", 1)
-            if kind not in ALLOWED_SCOPE_TYPES or not _rid:
-                raise ValueError("share_scope 仅允许 story / memory 类型，且不能为空 ID")
-        return v
+def _validate_policy_input(payload: PolicyIn) -> None:
+    """校验策略输入；用 HTTPException 而非 ValueError，兼容全局请求校验错误处理器。"""
+    if payload.trigger not in ("manual", "scheduled"):
+        raise HTTPException(status_code=422, detail="trigger 必须为 manual / scheduled")
+    # share_scope 项格式为 'story:<id>' 或 'memory:<id>'；拒绝 "all"/"*" 等通配符。
+    for item in payload.share_scope or []:
+        if not isinstance(item, str) or ":" not in item:
+            raise HTTPException(status_code=422, detail="share_scope 格式为 'story:<id>' 或 'memory:<id>'")
+        kind, rid = item.split(":", 1)
+        if kind not in ALLOWED_SCOPE_TYPES or not rid:
+            raise HTTPException(status_code=422, detail="share_scope 仅允许 story / memory 类型，且不能为空 ID")
 
 
 def _owned_contact(db: Session, contact_id: str, user_id: str) -> LegacyContact:
@@ -153,6 +145,7 @@ def delete_contact(
 
 @router.post("/policies", status_code=201)
 def create_policy(payload: PolicyIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    _validate_policy_input(payload)
     contact = _owned_contact(db, payload.contact_id, user.id)
     policy = LegacyPolicy(
         user_id=user.id,
