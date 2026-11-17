@@ -32,7 +32,8 @@ export function Auth() {
         <form onSubmit={submit}>
           <Field label="用户名"><input className="input" value={username} onChange={e => setUsername(e.target.value)} required /></Field>
           {mode === 'register' && <Field label="邮箱"><input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required /></Field>}
-          <Field label="密码"><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} /></Field>
+          {/* 8 位限制只用于注册；登录不限制长度，否则 6 位演示密码会被浏览器表单拦截 */}
+          <Field label="密码"><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={mode === 'register' ? 8 : undefined} /></Field>
           {error && <p style={{ color: '#e05260', fontSize: 13, marginBottom: 10 }}>{error}</p>}
           <button className="btn primary" type="submit">{mode === 'login' ? '登录' : '注册并登录'}</button>
         </form>
