@@ -1,0 +1,16 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+pydantic-settings>=2.2
+SQLAlchemy>=2.0
+alembic>=1.13
+python-jose[cryptography]>=3.3
+bcrypt>=4.0
+python-multipart>=0.0.9
+httpx>=0.27
+pytest>=8.0
+pytest-asyncio>=0.23
+# Optional (production): PostgreSQL + S3 + PDF export
+psycopg[binary]>=3.1
+boto3>=1.34
+reportlab>=4.0
