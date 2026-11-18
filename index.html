@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Memoir — Your Life. Your Stories. Your Legacy.</title>
+<meta name="description" content="AI 原生个人记忆、人生故事、家庭记忆与数字传承平台。从一个人的记忆开始，构建一个家庭的数字记忆资产。" />
+<style>
+  :root{
+    --midnight:#0B1730; --deep:#14284A; --electric:#4F8CFF; --purple:#9275E8;
+    --gold:#E7B75A; --white:#fff; --gray:#94A3B8; --ink:#12203a; --soft:#5b6b85;
+    --bg:#f7f9fd; --line:#e6ecf5; --radius:18px;
+    --font: -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,sans-serif;
+    --serif: "Songti SC","Noto Serif SC","STSong",Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 22px;border-radius:11px;font-weight:600;font-size:15px;transition:transform .18s,box-shadow .18s,background .18s;cursor:pointer;border:0}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{background:var(--electric);color:#fff;box-shadow:0 8px 24px rgba(79,140,255,.32)}
+  .btn-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
+  .btn-ghost:hover{background:rgba(255,255,255,.1)}
+  .btn-dark{background:var(--midnight);color:#fff}
+
+  /* Nav */
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 0;transition:background .3s,box-shadow .3s}
+  nav.scrolled{background:rgba(11,23,48,.9);backdrop-filter:blur(12px);box-shadow:0 4px 20px rgba(0,0,0,.15)}
+  .brand{display:flex;align-items:center;gap:10px;color:#fff;font-size:20px;font-weight:700;letter-spacing:.3px}
+  .brand-mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--electric),var(--purple));display:grid;place-items:center;font-family:var(--serif);font-size:19px}
+  .nav-links{display:flex;align-items:center;gap:30px;color:#c6d3e8;font-size:14px}
+  .nav-links a:hover{color:#fff}
+  .nav-cta{color:#fff!important}
+
+  /* Hero */
+  .hero{background:radial-gradient(1200px 600px at 75% 0%,rgba(146,117,232,.35),transparent 60%),linear-gradient(150deg,#0B1730,#14284A 60%,#1b2f57);color:#fff;padding:150px 0 90px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;left:-10%;bottom:-40%;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(79,140,255,.25),transparent 65%)}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:60px;align-items:center;position:relative;z-index:2}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#b9c8e4;border:1px solid rgba(255,255,255,.2);border-radius:30px;padding:7px 14px;margin-bottom:22px}
+  .pill i{width:7px;height:7px;border-radius:50%;background:var(--gold);display:inline-block}
+  .hero h1{font-family:var(--serif);font-size:clamp(38px,5vw,62px);line-height:1.18;font-weight:600;letter-spacing:.5px;margin-bottom:20px}
+  .hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--electric),var(--purple),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.lead{font-size:18px;color:#c6d3e8;max-width:520px;margin-bottom:30px}
+  .hero-cta{display:flex;gap:12px;flex-wrap:wrap}
+  .hero-note{margin-top:26px;font-size:13px;color:#8ea3c6;display:flex;gap:18px;flex-wrap:wrap}
+  .hero-note span::before{content:"✓ ";color:var(--gold)}
+
+  /* Mockup */
+  .mockup{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:18px;box-shadow:0 30px 70px rgba(0,0,0,.35);backdrop-filter:blur(6px);transform:rotate(-1deg)}
+  .mock-head{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .mock-head b{font-size:13px;color:#dbe6f7}
+  .dot{width:9px;height:9px;border-radius:50%;background:#e05260}
+  .mock-card{background:#fff;color:var(--ink);border-radius:14px;padding:18px;margin-bottom:12px}
+  .mock-card .k{font-size:11px;color:var(--soft);letter-spacing:1px;text-transform:uppercase}
+  .mock-card h3{font-family:var(--serif);font-size:21px;margin:5px 0 8px;color:var(--midnight)}
+  .mock-card p{font-size:13px;color:var(--soft);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .mock-thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .mock-thumbs div{height:60px;border-radius:9px}
+  .mock-wave{display:flex;gap:3px;align-items:center;height:34px;margin-top:8px}
+  .mock-wave i{width:3px;border-radius:3px;background:var(--purple)}
+  .mock-tag{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;background:#eef2ff;color:var(--electric);margin-top:10px}
+
+  /* Sections */
+  section{padding:96px 0}
+  .eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--electric);font-weight:700;margin-bottom:12px}
+  h2.sec{font-family:var(--serif);font-size:clamp(28px,3.6vw,42px);color:var(--midnight);line-height:1.3;margin-bottom:14px}
+  .sec-sub{color:var(--soft);font-size:17px;max-width:640px;margin-bottom:48px}
+  .center{text-align:center}
+  .center .sec-sub{margin-left:auto;margin-right:auto}
+
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .pillar{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:30px;box-shadow:0 6px 20px rgba(11,23,48,.04)}
+  .pillar .num{font-family:var(--serif);font-size:14px;color:var(--gold);margin-bottom:14px}
+  .pillar h3{font-size:21px;margin-bottom:8px;color:var(--midnight)}
+  .pillar p{color:var(--soft);font-size:15px}
+  .pillar .line{width:42px;height:3px;border-radius:3px;margin-top:18px}
+
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .feature{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;transition:transform .2s,box-shadow .2s}
+  .feature:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(11,23,48,.09)}
+  .feature .ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:20px;margin-bottom:16px}
+  .feature h3{font-size:18px;margin-bottom:7px;color:var(--midnight)}
+  .feature p{font-size:14px;color:var(--soft)}
+  .feature ul{list-style:none;margin-top:12px;font-size:13px;color:var(--soft)}
+  .feature ul li{padding-left:16px;position:relative;margin-bottom:3px}
+  .feature ul li::before{content:"·";position:absolute;left:2px;color:var(--electric);font-weight:700}
+
+  .band{background:linear-gradient(135deg,var(--midnight),var(--deep));color:#fff}
+  .band .eyebrow{color:var(--gold)}
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .step{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:24px}
+  .step .s-num{font-family:var(--serif);font-size:13px;color:var(--gold);margin-bottom:12px}
+  .step h4{font-size:17px;margin-bottom:6px}
+  .step p{font-size:13px;color:#aebfd8}
+  .band h2.sec{color:#fff}
+
+  .diff{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+  .diff-list{display:flex;flex-direction:column;gap:14px}
+  .diff-item{display:flex;gap:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
+  .diff-item .d-ico{width:38px;height:38px;flex:none;border-radius:10px;background:#eef2ff;display:grid;place-items:center;color:var(--electric);font-size:17px}
+  .diff-item b{font-size:15px}
+  .diff-item p{font-size:13px;color:var(--soft)}
+  .quote{font-family:var(--serif);font-size:24px;line-height:1.6;color:var(--midnight);border-left:4px solid var(--gold);padding-left:22px}
+  .quote small{display:block;font-family:var(--font);font-size:14px;color:var(--soft);margin-top:14px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center}
+  .stat b{display:block;font-family:var(--serif);font-size:42px;color:var(--electric)}
+  .stat span{font-size:14px;color:var(--soft)}
+
+  .cta{background:linear-gradient(135deg,rgba(79,140,255,.12),rgba(146,117,232,.12));border:1px solid var(--line);border-radius:24px;padding:56px;text-align:center}
+  .cta h2{font-family:var(--serif);font-size:34px;color:var(--midnight);margin-bottom:12px}
+  .cta p{color:var(--soft);margin-bottom:24px}
+  .accounts{display:inline-flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:26px;font-size:13px}
+  .accounts code{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 12px;color:var(--deep)}
+
+  footer{background:var(--midnight);color:#9fb0cc;padding:50px 0 30px;font-size:14px}
+  .foot-grid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px;margin-bottom:26px}
+  .foot-brand{color:#fff;font-size:19px;font-weight:700;display:flex;align-items:center;gap:10px}
+  .foot-line{border-top:1px solid rgba(255,255,255,.1);padding-top:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px}
+
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .7s,transform .7s}
+  .reveal.show{opacity:1;transform:none}
+
+  @media(max-width:900px){
+    .hero-grid,.diff{grid-template-columns:1fr}
+    .hero{padding-top:130px}
+    .pillars,.features{grid-template-columns:1fr}
+    .flow,.stats{grid-template-columns:repeat(2,1fr)}
+    .nav-links{display:none}
+    .mockup{transform:none}
+    section{padding:70px 0}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;width:100%">
+    <a href="#top" class="brand"><span class="brand-mark">M</span> Memoir</a>
+    <div class="nav-links">
+      <a href="#vision">愿景</a>
+      <a href="#features">产品中心</a>
+      <a href="#flow">工作流</a>
+      <a href="#why">差异化</a>
+      <a href="#start" class="nav-cta">开始体验 →</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="pill"><i></i> AI-Powered Life Story & Family Memory Platform</div>
+      <h1>Your Life.<br><em>Your Stories.</em><br>Your Legacy.</h1>
+      <p class="lead">把零散的人生记忆，变成可以阅读、可以分享、可以传承的人生故事。从一个人的记忆开始，构建一个家庭的数字记忆资产。</p>
+      <div class="hero-cta">
+        <a href="#start" class="btn btn-primary">开始记录人生 →</a>
+        <a href="#features" class="btn btn-ghost">了解产品能力</a>
+      </div>
+      <div class="hero-note">
+        <span>语音口述自动转写</span>
+        <span>AI 多风格故事生成</span>
+        <span>家庭协作与数字传承</span>
+      </div>
+    </div>
+    <div class="mockup">
+      <div class="mock-head"><span class="dot"></span><span class="dot" style="background:var(--gold)"></span><span class="dot" style="background:var(--electric)"></span><b style="margin-left:auto">Life Studio · 记忆工作台</b></div>
+      <div class="mock-card">
+        <div class="k">今日记忆问题</div>
+        <h3>你记忆中最早的一幅画面是什么？</h3>
+        <p>小时候我经常跟父亲去北京什刹海划船，那段时间很快乐。父亲喜欢在湖边慢走……</p>
+        <div class="mock-thumbs">
+          <div style="background:linear-gradient(135deg,#e6d6b4,#9a7450)"></div>
+          <div style="background:linear-gradient(135deg,#bcd0e6,#466f9e)"></div>
+          <div style="background:linear-gradient(135deg,#d2e1c8,#5a8c5a)"></div>
+        </div>
+        <span class="mock-tag">◉ 口述录音 · 已转写</span>
+      </div>
+      <div class="mock-card">
+        <div class="k">AI 生成故事 · 第一人称</div>
+        <p style="display:block;-webkit-line-clamp:initial">我记得什刹海的秋天……</p>
+        <div class="mock-wave" id="wave"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="vision">
+  <div class="wrap">
+    <div class="center reveal">
+      <div class="eyebrow">The Vision</div>
+      <h2 class="sec">记忆不该散落，故事值得被写好</h2>
+      <p class="sec-sub">不是又一个日记本，而是一套 AI 原生的记忆采集、故事创作与家庭传承系统。</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar reveal"><div class="num">01 · CAPTURE</div><h3>记忆采集</h3><p>语音、照片、视频、文字，随手记录。不擅长写作的人也能用口述留下珍贵回忆。</p><div class="line" style="background:var(--electric)"></div></div>
+      <div class="pillar reveal"><div class="num">02 · CREATE</div><h3>故事创作</h3><p>AI 访谈动态追问，把碎片变成完整故事；七种叙事风格，原始讲述永不被覆盖。</p><div class="line" style="background:var(--purple)"></div></div>
+      <div class="pillar reveal"><div class="num">03 · PRESERVE</div><h3>数字传承</h3><p>家庭共同参与，回忆录出版，数字资产长期保存，按你的意愿传递给下一代。</p><div class="line" style="background:var(--gold)"></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="wrap">
+    <div class="center reveal">
+      <div class="eyebrow">Six Product Centers</div>
+      <h2 class="sec">六大产品中心，一套完整系统</h2>
+      <p class="sec-sub">从记录到创作，从家庭到传承，每个环节都为你设计。</p>
+    </div>
+    <div class="features">
+      <div class="feature reveal"><div class="ico" style="background:#eef2ff;color:var(--electric)">⌂</div><h3>Life Studio · 人生工作台</h3><p>登录后的首页,一眼看见你的记忆资产与人生进度。</p><ul><li>记忆/故事/照片/音视频统计</li><li>每日记忆问题与动态追问</li><li>最近记录与人生里程碑</li></ul></div>
+      <div class="feature reveal"><div class="ico" style="background:#f0ebff;color:var(--purple)">▤</div><h3>Memory Vault · 个人记忆库</h3><p>多模态记忆的统一管理,原始数据与 AI 衍生内容分离保存。</p><ul><li>时间线、标签、搜索与人物关联</li><li>拖拽上传、回收站与恢复</li><li>私人 AI 记忆问答(带引用)</li></ul></div>
+      <div class="feature reveal"><div class="ico" style="background:#fff4e2;color:#c98a1e">✎</div><h3>Story Studio · 故事工作室</h3><p>核心产品力:把讲述变成故事,把故事写成人生。</p><ul><li>200 条中文人生问题库</li><li>语音转写与七种叙事风格</li><li>版本对比、事实保护与审核</li></ul></div>
+      <div class="feature reveal"><div class="ico" style="background:#e6f7ee;color:#2f9e6b">♧</div><h3>Family Circle · 家庭空间</h3><p>让家人一起参与记忆建设,权限由你在服务端定义。</p><ul><li>家庭空间与邀请机制</li><li>五种角色分级授权</li><li>评论、补充与协作</li></ul></div>
+      <div class="feature reveal"><div class="ico" style="background:#fdecee;color:#d85260">▣</div><h3>Legacy Book · 回忆录出版</h3><p>把故事编排成正式出版物,二维码连接原始声音。</p><ul><li>章节编排与封面设计</li><li>PDF / Markdown / JSON 导出</li><li>可撤销的故事二维码</li></ul></div>
+      <div class="feature reveal"><div class="ico" style="background:#e8eefc;color:var(--deep)">✦</div><h3>Digital Legacy · 数字传承</h3><p>你的记忆归你所有,按你的意愿、在核验后传递给指定的人。</p><ul><li>显式授权与可撤销策略</li><li>指定分享范围与人工审核</li><li>完整数据导出与备份</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="flow">
+  <div class="wrap">
+    <div class="reveal"><div class="eyebrow">How It Works</div><h2 class="sec"> Capture → Transform → Collaborate → Preserve</h2><p class="sec-sub" style="color:#aebfd8">一个完整的故事生产闭环,而不是简单的语音转文字。</p></div>
+    <div class="flow">
+      <div class="step reveal"><div class="s-num">01 / 采集</div><h4>选问题,开口讲</h4><p>从问题库选择主题,或由 AI 提问。手机录音、视频、文字都可以,不要求会写作。</p></div>
+      <div class="step reveal"><div class="s-num">02 / 转写</div><h4>声音变成文字</h4><p>真实 ASR 服务转写为逐字稿,人工可修正;原始录音永久独立保存。</p></div>
+      <div class="step reveal"><div class="s-num">03 / 生成</div><h4>AI 写成故事</h4><p>多风格叙事、事实保护,不确定的信息标记待确认而不是编造。</p></div>
+      <div class="step reveal"><div class="s-num">04 / 传承</div><h4>分享与出版</h4><p>家人阅读评论,编成回忆录,生成二维码,按授权策略长期保存。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="wrap diff">
+    <div class="reveal">
+      <div class="eyebrow">Why Memoir</div>
+      <h2 class="sec">不止于 AI 写作,<br>而是理解一个人的人生</h2>
+      <p class="sec-sub">AI 不只是把声音变成文章,而是逐渐识别时间、人物、地点、事件与情感,把每一段记忆连成网络。</p>
+      <div class="quote reveal">你小时候经常跟父亲去什刹海,那段时间很快乐。<small>→ 时间:童年 · 人物:父亲 · 地点:北京什刹海 · 情感:快乐、怀念 · 关联:其他与父亲有关的回忆</small></div>
+    </div>
+    <div class="diff-list reveal">
+      <div class="diff-item"><div class="d-ico">◉</div><div><b>原始内容不可覆盖</b><p>录音、逐字稿、AI 故事、人工修改分开保存,原始讲述永远是你的资产。</p></div></div>
+      <div class="diff-item"><div class="d-ico">✦</div><div><b>事实保护机制</b><p>AI 不补充你没说过的日期、人物与对话;不确定的信息标记待确认。</p></div></div>
+      <div class="diff-item"><div class="d-ico">♧</div><div><b>家庭数据严格隔离</b><p>每人独立空间,所有资源服务端校验归属;家庭成员按角色授权。</p></div></div>
+      <div class="diff-item"><div class="d-ico">▣</div><div><b>传承不自动交付</b><p>必须显式授权、身份核验、人工审核;可随时撤销,有争议处理机制。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section style="background:#fff;border-top:1px solid var(--line)">
+  <div class="wrap">
+    <div class="stats reveal">
+      <div class="stat"><b>6</b><span>产品中心</span></div>
+      <div class="stat"><b>200</b><span>中文人生问题</span></div>
+      <div class="stat"><b>7</b><span>故事叙事风格</span></div>
+      <div class="stat"><b>10</b><span>语音合成语言</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <div class="cta reveal">
+      <div class="eyebrow">Get Started</div>
+      <h2>从一段记忆开始</h2>
+      <p>让每个人都能轻松记录自己的人生,让每个家庭都拥有可以传承的数字记忆。</p>
+      <div class="hero-cta" style="justify-content:center">
+        <a href="https://github.com/zhubao315/memoir" class="btn btn-dark">查看开源仓库 →</a>
+        <a href="https://github.com/zhubao315/memoir#readme" class="btn btn-danger" style="background:var(--electric);color:#fff">阅读文档</a>
+      </div>
+      <div class="accounts">
+        <span>本地演示账号:</span>
+        <code>林一 / 123456</code>
+        <code>demo / 123456</code>
+        <code>林晓 / 123456</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand"><span class="brand-mark">M</span> Memoir</div>
+        <p style="margin-top:10px;max-width:360px">Your Life. Your Stories. Your Legacy.<br>AI 原生人生故事与家庭记忆平台。</p>
+      </div>
+      <div>
+        <b style="color:#fff">产品</b><br><a href="#features">六大中心</a><br><a href="#flow">工作流</a><br><a href="#why">差异化</a>
+      </div>
+      <div>
+        <b style="color:#fff">资源</b><br><a href="https://github.com/zhubao315/memoir">源码</a><br><a href="https://github.com/zhubao315/memoir#readme">文档</a><br><a href="https://github.com/zhubao315/memoir/issues">反馈</a>
+      </div>
+    </div>
+    <div class="foot-line"><span>© 2026 Memoir · Open Source</span><span>Made with care for the stories that matter.</span></div>
+  </div>
+</footer>
+
+<script>
+  // wave bars
+  const wave=document.getElementById('wave');
+  for(let i=0;i<34;i++){const b=document.createElement('i');b.style.height=(6+((i*13)%26))+'px';wave.appendChild(b)}
+  // nav scroll state
+  const nav=document.getElementById('nav');
+  addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>40));
+  // reveal on scroll
+  const io=new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('show');io.unobserve(e.target)}}),{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
