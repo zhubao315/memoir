@@ -1,6 +1,10 @@
 <div align="center">
 
-<img src="docs/assets/banner.png" alt="Memoir — Your Life. Your Stories. Your Legacy." width="100%" />
+<img src="brand/banner.png" alt="Memoir — Quiet Heritage · Your Life. Your Stories. Your Legacy." width="100%" />
+
+<p align="center">
+  <img src="brand/logo-primary.png" alt="Memoir" width="360" />
+</p>
 
 <br>
 
@@ -19,6 +23,25 @@
 [🌐 在线落地页](https://zhubao315.github.io/memoir/) · [📖 文档](#-文档) · [🚀 快速开始](#-快速开始) · [🎭 演示账号](#-演示账号)
 
 </div>
+
+---
+
+## 🎨 品牌 · Quiet Heritage / 静谧传承
+
+Memoir 的品牌视觉以「档案墨蓝建立信任、纸白表达记忆、琥珀表达珍贵瞬间」为核心，贯穿官网、产品 UI、GitHub 与回忆录出版物。
+
+**Memory Fold · 记忆折页** —— 原创 M 型符号：两组对称折页构成稳定轮廓，负空间的连续曲线是记忆路径，琥珀圆点标记值得保存的瞬间；16px 下仍可辨识。
+
+| 颜色 | HEX | 用途 |
+| --- | --- | --- |
+| Archive Ink 档案墨蓝 | `#263841` | Logo、标题、主要文字 |
+| Midnight Archive 深夜档案 | `#192A33` | 深色背景、页脚 |
+| Memory Ivory 记忆纸白 | `#F5F0E7` | 网站背景、展示底色 |
+| Memory Amber 记忆琥珀 | `#B77B50` | 记忆节点、重点强调 |
+| Quiet Sage 传承鼠尾草 | `#85958A` | 辅助图形、状态 |
+| Stone Mist 时光石灰 | `#CFC9BE` | 边框、分隔线 |
+
+Logo 变体（全矢量 SVG）：横向标准、独立符号、纵向组合、深色版、单色版、App 图标、多尺寸 Favicon。完整规范见 [`brand/BRAND.md`](brand/BRAND.md)，展示板见 [`brand/brand-board.png`](brand/brand-board.png)。
 
 ---
 

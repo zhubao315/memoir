@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 150" width="660" height="150"><rect width="660" height="150" fill="#192A33"/>
+  <g transform="translate(8,18) scale(0.82)">
+  <!-- 左折页：从底向上翻折的一页档案 -->
+  <path d="M28 172 V44 C28 38 33 34 39 34 H63 C69 34 74 38 76 44 L100 116 L76 124 L60 62 C59 58 55 56 51 56 H49 C45 56 42 59 42 63 V172 Z" fill="#F5F0E7"/>
+  <!-- 右折页：镜像 -->
+  <path d="M172 172 V44 C172 38 167 34 161 34 H137 C131 34 126 38 124 44 L100 116 L124 124 L140 62 C141 58 145 56 149 56 H151 C155 56 158 59 158 63 V172 Z" fill="#F5F0E7"/>
+  <!-- 负空间：连续记忆路径（细线，连接左右折页顶部到底部中心） -->
+  <path d="M50 50 C50 96 100 100 100 132 C100 100 150 96 150 50" fill="none" stroke="#CFC9BE" stroke-width="2.4" stroke-linecap="round" opacity="0.9"/>
+  <!-- 底部路径延伸：时间轴 -->
+  <path d="M100 132 V172" stroke="#CFC9BE" stroke-width="2.4" stroke-linecap="round" opacity="0.9"/>
+  <!-- 记忆节点：珍贵瞬间 -->
+  <circle cx="100" cy="132" r="7.5" fill="#B77B50"/>
+  <circle cx="100" cy="132" r="13" fill="none" stroke="#B77B50" stroke-width="1.6" opacity="0.45"/>
+</g>
+  <text x="188" y="86" font-family="Georgia, 'Noto Serif CJK SC', serif" font-size="56" fill="#F5F0E7">Memoir</text>
+  <text x="190" y="118" font-family="Helvetica, Arial, sans-serif" font-size="11.5" letter-spacing="2.1" fill="#CFC9BE">AI-POWERED LIFE STORY &amp; FAMILY MEMORY PLATFORM</text>
+</svg>

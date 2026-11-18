@@ -13,10 +13,10 @@ function greeting() {
 }
 
 const QUICK = [
-  { ico: '✎', title: '快速记录', desc: '写下一刻的想法', to: '/memories', color: '#4F8CFF' },
-  { ico: '◈', title: 'AI 人生访谈', desc: '让问题带你回忆', to: '/story?tab=interview', color: '#9275E8' },
-  { ico: '◉', title: '说一段故事', desc: '录音自动转文字', to: '/voice', color: '#E05260' },
-  { ico: '▧', title: '整理媒体库', desc: '照片与录音归档', to: '/media', color: '#E7B75A' },
+  { ico: '✎', title: '快速记录', desc: '写下一刻的想法', to: '/memories', color: '#263841' },
+  { ico: '◈', title: 'AI 人生访谈', desc: '让问题带你回忆', to: '/story?tab=interview', color: '#B77B50' },
+  { ico: '◉', title: '说一段故事', desc: '录音自动转文字', to: '/voice', color: '#85958A' },
+  { ico: '▧', title: '整理媒体库', desc: '照片与录音归档', to: '/media', color: '#B77B50' },
 ]
 
 export function Dashboard() {

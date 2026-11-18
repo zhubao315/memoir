@@ -1,26 +1,46 @@
+/* ==========================================================================
+   Memoir Brand Tokens — Quiet Heritage / 静谧传承
+   --------------------------------------------------------------------------
+   档案墨蓝 Archive Ink   #263841  Logo / 标题 / 主要文字
+   深夜档案 Midnight      #192A33  深色背景 / 页脚
+   记忆纸白 Memory Ivory  #F5F0E7  网站背景 / 展示底色
+   记忆琥珀 Memory Amber  #B77B50  记忆节点 / 重点强调
+   传承鼠尾草 Quiet Sage  #85958A  辅助图形 / 状态
+   时光石灰 Stone Mist    #CFC9BE  边框 / 分隔线
+   ========================================================================== */
 :root {
-  /* Brand palette (from product spec) */
-  --midnight: #0B1730;
-  --deep-blue: #14284A;
-  --electric-blue: #4F8CFF;
-  --memory-purple: #9275E8;
-  --warm-gold: #E7B75A;
-  --white: #FFFFFF;
-  --cool-gray: #94A3B8;
+  /* ---- 新品牌色（权威）---- */
+  --archive-ink: #263841;
+  --midnight-archive: #192A33;
+  --memory-ivory: #F5F0E7;
+  --memory-amber: #B77B50;
+  --quiet-sage: #85958A;
+  --stone-mist: #CFC9BE;
 
-  --bg: #f6f8fc;
-  --surface: #ffffff;
-  --surface-2: #f1f5fb;
-  --ink: #12203a;
-  --ink-soft: #5b6b85;
-  --line: #e4eaf3;
-  --danger: #e05260;
-  --success: #2fae79;
+  /* ---- 别名：兼容既有组件引用 ---- */
+  --midnight: var(--midnight-archive);
+  --deep-blue: var(--archive-ink);
+  --electric-blue: var(--archive-ink);     /* 原交互蓝 → 档案墨蓝 */
+  --memory-purple: var(--memory-amber);    /* 原 AI 紫 → 记忆琥珀 */
+  --warm-gold: var(--memory-amber);
+  --white: #ffffff;
+  --cool-gray: var(--quiet-sage);
+
+  /* ---- 语义色 ---- */
+  --bg: var(--memory-ivory);
+  --surface: #fffdf9;
+  --surface-2: #efe9dd;
+  --ink: var(--archive-ink);
+  --ink-soft: #5e6a63;
+  --line: var(--stone-mist);
+  --danger: #b4473f;
+  --success: #5f8a6f;
 
   --radius: 14px;
   --radius-sm: 9px;
-  --shadow: 0 1px 2px rgba(11,23,48,.05), 0 8px 24px rgba(11,23,48,.06);
+  --shadow: 0 1px 2px rgba(38,56,65,.05), 0 8px 24px rgba(38,56,65,.08);
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, sans-serif;
+  --font-brand: Georgia, "Noto Serif CJK SC", "Songti SC", serif;
 }
 
 html[data-simple='true'] {
@@ -29,3 +49,6 @@ html[data-simple='true'] {
 }
 
 body { font-size: var(--font-size-base, 16px); }
+
+/* 品牌字标：编辑式衬线 */
+.brand, .hero h1, h1, h2, .stat .v { font-family: var(--font-brand); }

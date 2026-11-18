@@ -42,7 +42,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="app-shell">
       {menuOpen && <div className="nav-overlay" onClick={() => setMenuOpen(false)} />}
       <aside className={`sidebar${menuOpen ? ' open' : ''}`}>
-        <div className="brand"><span className="brand-mark">M</span><span>Memoir</span></div>
+        <div className="brand"><img src="/assets/logo-symbol.png" alt="" className="brand-logo" /><span>Memoir</span></div>
         <nav className="nav">
           {NAV.map((item) => {
             const head = item.group !== lastGroup ? (lastGroup = item.group) : null
