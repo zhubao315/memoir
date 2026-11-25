@@ -1,7 +1,9 @@
-name: Deploy Memoir to GitHub Pages
+name: Deploy Memoir to GitHub Pages (DISABLED - Pages uses legacy gh-pages)
 
 on:
-  push:
+  workflow_dispatch:
+  # push trigger disabled: Pages source is legacy gh-pages
+  push_disabled:
     branches: [master, main]
   workflow_dispatch:
 
